@@ -18,9 +18,9 @@ fn filtered_chars(source: &str, exclude_ambiguous: bool) -> Vec<char> {
 
 fn validate_custom_symbols(symbols: &str) -> Result<(), KeySmithError> {
     if symbols.chars().count() > MAX_CUSTOM_SYMBOLS
-        || symbols
-            .chars()
-            .any(|character| character.is_control() || character.is_whitespace())
+        || symbols.chars().any(|character| {
+            character.is_control() || character.is_whitespace() || character.is_alphanumeric()
+        })
     {
         return Err(KeySmithError::InvalidCustomSymbols);
     }
