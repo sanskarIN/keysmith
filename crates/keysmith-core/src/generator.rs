@@ -43,10 +43,12 @@ pub fn generate_password(options: &PasswordOptions) -> Result<String, KeySmithEr
         });
     }
 
-    if options.symbols {
-        if let Some(symbols) = options.custom_symbols.as_deref() {
-            validate_custom_symbols(symbols)?;
-        }
+    if let Some(symbols) = options
+        .custom_symbols
+        .as_deref()
+        .filter(|_| options.symbols)
+    {
+        validate_custom_symbols(symbols)?;
     }
 
     let symbol_source = options
