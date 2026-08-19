@@ -250,7 +250,9 @@ mod tests {
             now,
         );
 
-        let scheduled = pending.as_ref().expect("replacement schedule should remain pending");
+        let Some(scheduled) = pending.as_ref() else {
+            panic!("replacement schedule should remain pending");
+        };
         assert_eq!(scheduled.expected.as_str(), "second");
         assert_eq!(scheduled.deadline, now + Duration::from_secs(120));
     }
