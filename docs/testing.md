@@ -53,8 +53,11 @@ Frontend/repository gate:
 - `npm run typecheck`
 - `npm run lint`
 - `npm run format:check`
+- `npm run docs:check`
 - `npm test`
 - `npm run build`
+
+`npm run docs:check` compares every path returned by `git ls-files` with `docs/repository-reference.md`; an undocumented tracked project file fails CI. This makes documentation completeness a testable repository invariant rather than a manual release note.
 
 Rust gate:
 
@@ -81,12 +84,15 @@ A tag does not proceed directly to installers. The tag workflow first runs the `
 
 - the tag name to equal `v${package.json.version}`,
 - frontend dependency audit and repository secret scan,
-- TypeScript typecheck/lint/text hygiene/tests/build,
+- TypeScript typecheck/lint/text hygiene/documentation inventory/tests/build,
 - Rust formatting,
 - core Clippy with warnings denied,
-- Rust core tests.
+- Rust core tests,
+- Cargo lockfile resolution and cargo-deny dependency policy.
 
-Platform release builds depend on that preflight.
+Workflow-level permissions are read-only. Only the artifact-building job receives `contents: write`, because that job alone needs to create/update the draft GitHub release.
+
+Platform release builds depend on the complete preflight.
 
 ## Manual application verification
 
@@ -104,4 +110,4 @@ Every defect involving randomness, secret leakage, clipboard behavior, permissio
 
 ## Clean-build release gate
 
-Release candidates must pass CI and CodeQL on one exact commit, including desktop checks on Windows, macOS, and Linux. A release tag must not be created while required automated, lockfile, packaged-application, screenshot, or release-governance evidence remains unresolved.
+Release candidates must pass CI and CodeQL on one exact commit, including desktop checks on Windows, macOS, and Linux. A release tag must not be created while required automated, documentation-inventory, lockfile, packaged-application, screenshot, or release-governance evidence remains unresolved.
