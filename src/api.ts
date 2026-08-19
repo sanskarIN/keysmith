@@ -1,4 +1,5 @@
 import type {
+  BatchSecretResult,
   PassphraseOptions,
   PassphraseResult,
   PasswordOptions,
@@ -22,7 +23,7 @@ export const api = {
   generatePassphrase(options: PassphraseOptions): Promise<PassphraseResult> {
     return invoke("generate_passphrase_command", { options });
   },
-  generateBatch(options: PasswordOptions, count: number): Promise<SecretResult[]> {
+  generateBatch(options: PasswordOptions, count: number): Promise<BatchSecretResult[]> {
     return invoke("generate_batch_command", { options, count });
   },
   presets(): Promise<PasswordPreset[]> {
