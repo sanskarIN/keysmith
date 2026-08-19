@@ -5,6 +5,7 @@ const THEME_KEY = "keysmith.theme";
 const ONBOARDING_KEY = "keysmith.onboardingComplete";
 const DEFAULT_CLIPBOARD_CLEAR_SECONDS = 30;
 const SUPPORTED_CLIPBOARD_CLEAR_SECONDS = new Set([0, 15, 30, 60, 120]);
+const SUPPORTED_STORED_CLIPBOARD_CLEAR_SECONDS = new Set(["0", "15", "30", "60", "120"]);
 
 function safeRead(key: string): string | null {
   try {
@@ -30,8 +31,10 @@ function normalizeClipboardClearSeconds(seconds: number): number {
 
 export function getClipboardClearSeconds(): number {
   const stored = safeRead(CLIPBOARD_KEY);
-  const parsed = stored === null ? DEFAULT_CLIPBOARD_CLEAR_SECONDS : Number(stored);
-  return normalizeClipboardClearSeconds(parsed);
+  if (stored === null || !SUPPORTED_STORED_CLIPBOARD_CLEAR_SECONDS.has(stored)) {
+    return DEFAULT_CLIPBOARD_CLEAR_SECONDS;
+  }
+  return Number(stored);
 }
 
 export function setClipboardClearSeconds(seconds: number): void {
