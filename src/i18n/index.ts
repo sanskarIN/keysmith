@@ -1,7 +1,7 @@
 import { en } from "./en";
 
 export type TranslationKey = keyof typeof en;
-export type TranslationCatalog = Record<TranslationKey, string>;
+export type TranslationCatalog = Readonly<Record<TranslationKey, string>>;
 
 function translatedValue(catalog: TranslationCatalog, key: string | undefined): string | null {
   if (!key || !(key in catalog)) return null;
