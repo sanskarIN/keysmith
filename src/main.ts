@@ -6,6 +6,7 @@ import { applyTranslations } from "./i18n";
 import { en, enFormat } from "./i18n/en";
 import { localizedPresetCopy } from "./i18n/presets";
 import { localizedStrengthLabel } from "./i18n/strength";
+import { customSymbolsFromInput } from "./policy-input";
 import {
   completeOnboarding,
   getClipboardClearSeconds,
@@ -79,7 +80,6 @@ let presets: PasswordPreset[] = [];
 let generationRevision = 0;
 
 function passwordOptions(): PasswordOptions {
-  const symbols = ui.customSymbols.value;
   return {
     length: Number(ui.length.value),
     lowercase: ui.lowercase.checked,
@@ -87,7 +87,7 @@ function passwordOptions(): PasswordOptions {
     digits: ui.digits.checked,
     symbols: ui.symbols.checked,
     excludeAmbiguous: ui.ambiguous.checked,
-    customSymbols: symbols.length > 0 ? symbols : null,
+    customSymbols: customSymbolsFromInput(ui.customSymbols.value),
   };
 }
 
@@ -186,11 +186,14 @@ async function generate(): Promise<void> {
 
 async function copyText(value: string): Promise<void> {
   if (!value) return;
+  const revision = generationRevision;
   try {
     await api.copySecret(value, Number(ui.clipboardTime.value));
-    setStatus(en.copied);
+    if (revision === generationRevision) setStatus(en.copied);
   } catch (error) {
-    setStatus(`${en.clipboardActionFailed} ${String(error)}`, true);
+    if (revision === generationRevision) {
+      setStatus(`${en.clipboardActionFailed} ${String(error)}`, true);
+    }
   }
 }
 
