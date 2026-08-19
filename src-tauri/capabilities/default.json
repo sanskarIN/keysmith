@@ -3,5 +3,18 @@
   "identifier": "main-capability",
   "description": "Least-privilege capability for the KeySmith main window",
   "windows": ["main"],
-  "permissions": ["keysmith-generation", "keysmith-clipboard"]
+  "permissions": [
+    "keysmith-generation",
+    "keysmith-clipboard",
+    {
+      "identifier": "opener:allow-open-url",
+      "allow": [
+        { "url": "https://github.com/sanskarIN" },
+        { "url": "https://buymeacoffee.com/sanskarIN" },
+        { "url": "mailto:supportramsandesh@gmail.com" },
+        { "url": "mailto:sanskarin@outlook.in" },
+        { "url": "mailto:sanskarin.business@gmail.com" }
+      ]
+    }
+  ]
 }
