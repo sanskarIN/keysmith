@@ -21,7 +21,9 @@ All notable changes follow a Keep a Changelog style and Semantic Versioning.
 - Static Tauri security-configuration regression coverage for global-bridge state, explicit capabilities, unused-command stripping, custom permissions, and absence of `core:default`.
 - External-link configuration drift tests that keep About markup, frontend allowlist, and native opener scope synchronized.
 - Release-version consistency tests across npm, Cargo, Tauri configuration, and visible UI metadata.
-- Security, privacy, architecture, testing, release, localization, contribution, and architecture-decision documentation.
+- Security, privacy, architecture, testing, release, localization, contribution, logging, user, core-API, native-boundary, frontend, maintainer, and architecture-decision documentation.
+- A complete documentation portal and canonical file-by-file repository reference covering every tracked source/config/test/doc/asset file.
+- CI-enforced `npm run docs:check` tracked-file documentation completeness validation.
 - GitHub CI, CodeQL, dependency update, issue, pull-request, funding, and release automation configuration.
 
 ### Changed
@@ -43,6 +45,7 @@ All notable changes follow a Keep a Changelog style and Semantic Versioning.
 - CodeQL Rust analysis builds the complete Rust workspace instead of only `keysmith-core`.
 - Tauri desktop code is checked and linted with warnings denied on Linux, Windows, and macOS CI.
 - Tag-triggered release builds are gated by a version-matching `Verify release tag` preflight and frontend/core quality checks.
+- Documentation navigation now starts at `docs/README.md`, while `docs/repository-reference.md` is machine-checked against `git ls-files` so new tracked files cannot be silently undocumented.
 
 ### Fixed
 - Clipboard secret buffers are wrapped in zeroizing guards so early error returns clear application-owned copies where practical.
