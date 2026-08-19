@@ -1,0 +1,6 @@
+KeySmith
+Copyright 2026 Sanskar
+
+Licensed under the Apache License, Version 2.0.
+
+KeySmith uses third-party open-source dependencies. Their licenses and attribution remain with their respective authors. In particular, EFF word-list data is consumed through the `eff_wordlist` Rust crate; see that project's distribution and the Electronic Frontier Foundation documentation for the source list and licensing information.
