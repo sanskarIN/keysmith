@@ -27,7 +27,7 @@ KeySmith is a desktop utility for Windows, macOS, and Linux. Passwords and passp
 - Light, dark, and system themes with keyboard-first accessibility.
 - English-first, internationalization-ready frontend with externalized UI strings and tested fallback behavior.
 - Offline-by-design architecture with restrictive CSP, module-only Tauri API usage, no global Tauri bridge, explicitly enabled least-privilege capabilities, and unused-command stripping.
-- Security, privacy, threat-model, testing, accessibility, release, localization, architecture, and ADR documentation.
+- CI-enforced file-by-file documentation completeness in addition to security/privacy/threat/testing/release/localization/architecture documentation.
 
 ## Screenshots
 
@@ -52,7 +52,7 @@ Release candidates are checked and linted as a Tauri desktop crate on Linux, Win
 - official Tauri dialog plugin for the Rust-owned native save flow
 - official Tauri opener plugin with exact URL/mail scope
 - `getrandom` for OS cryptographic randomness
-- `eff-wordlist` for EFF Diceware words
+- Cargo package `eff-wordlist` / Rust crate `eff_wordlist` for EFF Diceware words
 - `zxcvbn` for strength estimation
 - `arboard` for clipboard integration
 - `zeroize` for application-owned sensitive buffers where practical
@@ -77,6 +77,7 @@ npm run secret:check
 npm run typecheck
 npm run lint
 npm run format:check
+npm run docs:check
 npm test
 npm run build
 
@@ -105,13 +106,36 @@ The Tauri bundler produces platform-native artifacts. A stable release additiona
 
 Security-sensitive generation logic lives in `crates/keysmith-core` and has no UI dependency. `src-tauri` owns narrow native adapters for generation IPC, clipboard handling, batch save, and scoped external opening. The TypeScript layer renders the UI, externalizes user-facing copy, stores only non-secret preferences in local storage, and imports Tauri through its bundled module API. Generated secrets are not intentionally persisted.
 
-See [`docs/architecture.md`](docs/architecture.md), [`docs/i18n.md`](docs/i18n.md), and [`docs/adr/`](docs/adr/).
+See [`docs/architecture.md`](docs/architecture.md), [`docs/core-api.md`](docs/core-api.md), [`docs/desktop-bridge.md`](docs/desktop-bridge.md), [`docs/frontend.md`](docs/frontend.md), and [`docs/adr/`](docs/adr/).
+
+## Documentation
+
+The complete maintained documentation portal is [`docs/README.md`](docs/README.md). Important entry points:
+
+| Need | Document |
+| --- | --- |
+| End-user behavior and safe use | [`docs/user-guide.md`](docs/user-guide.md) |
+| Full architecture/trust boundaries | [`docs/architecture.md`](docs/architecture.md) |
+| Rust core API/security algorithms | [`docs/core-api.md`](docs/core-api.md) |
+| Tauri commands/native privileges | [`docs/desktop-bridge.md`](docs/desktop-bridge.md) |
+| Frontend state/API/integration model | [`docs/frontend.md`](docs/frontend.md) |
+| Accessibility | [`docs/accessibility.md`](docs/accessibility.md) |
+| Localization | [`docs/i18n.md`](docs/i18n.md) |
+| Logging/redaction | [`docs/logging.md`](docs/logging.md) |
+| Automated/manual testing | [`docs/testing.md`](docs/testing.md) |
+| Exact release-candidate checklist | [`docs/verification.md`](docs/verification.md) |
+| Release process | [`docs/release.md`](docs/release.md) |
+| Maintainer operations | [`docs/maintainer-guide.md`](docs/maintainer-guide.md) |
+| Every tracked repository file | [`docs/repository-reference.md`](docs/repository-reference.md) |
+| Current continuation ledger | [`what_changed.md`](what_changed.md) |
+
+`npm run docs:check` uses `git ls-files` to ensure every tracked project path appears in the canonical repository reference. CI runs this check on every candidate.
 
 ## Security and privacy
 
 KeySmith does not log generated secrets, transmit them to an application server, or retain a password history. Clipboard use is explicit; auto-clear is optional and conditional. Batch exports are plaintext by design, carry a prominent warning, and are written only after the user chooses a destination in the native save dialog. Rust validates security-sensitive IPC inputs instead of trusting HTML constraints.
 
-The main webview does not receive `core:default`, a global Tauri object, generic filesystem-write authority, or arbitrary external URL permission. CI includes dependency audit/policy checks, repository secret scanning, strict TypeScript/Rust linting, cross-platform desktop checks, configuration regression tests, and CodeQL analysis of both the frontend and complete Rust workspace.
+The main webview does not receive `core:default`, a global Tauri object, generic filesystem-write authority, or arbitrary external URL permission. CI includes dependency audit/policy checks, repository secret scanning, documentation completeness, strict TypeScript/Rust linting, cross-platform desktop checks, configuration regression tests, and CodeQL analysis of both the frontend and complete Rust workspace.
 
 Read [`SECURITY.md`](SECURITY.md), [`PRIVACY.md`](PRIVACY.md), [`THREAT_MODEL.md`](THREAT_MODEL.md), and [`docs/logging.md`](docs/logging.md) before making security-sensitive changes.
 
