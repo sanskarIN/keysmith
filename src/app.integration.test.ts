@@ -166,4 +166,35 @@ describe("primary frontend journey", () => {
       });
     });
   });
+
+  it("ignores a generation result that finishes after the user changes modes", async () => {
+    button("tab-password").click();
+
+    let resolvePending: ((value: SecretResult) => void) | undefined;
+    const pendingResult = new Promise<SecretResult>((resolve) => {
+      resolvePending = resolve;
+    });
+    tauri.invoke.mockImplementationOnce((command: string) => {
+      if (command !== "generate_password_command") {
+        return Promise.reject(new Error(`Unexpected deferred command: ${command}`));
+      }
+      return pendingResult;
+    });
+
+    button("generate-button").click();
+    expect(button("generate-button").disabled).toBe(true);
+
+    button("tab-passphrase").click();
+    expect(button("generate-button").disabled).toBe(false);
+    expect(document.querySelector("#secret-output")?.textContent).toBe("Select Generate to begin");
+
+    if (!resolvePending) throw new Error("Deferred password resolver was not initialized");
+    resolvePending(generatedPassword);
+    await pendingResult;
+    await Promise.resolve();
+
+    expect(document.querySelector("#tab-passphrase")?.getAttribute("aria-selected")).toBe("true");
+    expect(document.querySelector("#secret-output")?.textContent).toBe("Select Generate to begin");
+    expect(button("copy-button").disabled).toBe(true);
+  });
 });
