@@ -1,23 +1,44 @@
 # KeySmith — Development Handoff
 
 Last updated: 2026-08-19
-Current version: `0.1.0`
-Current milestone: final release-candidate verification
+Current version: `2.0.12`
+Current milestone: final `2.0.12` release-candidate verification
 Repository: `sanskarIN/keysmith`
 Primary branch: `main`
 Verification branch: `chore/final-verification`
-Verification pull request: `#12` — `chore: finalize release verification and documentation`
+Verification pull request: `#12`
 Required maintainer commit email: `sanskarin@outlook.in`
 
-This file is the canonical continuation and verification ledger for KeySmith. Read it together with `docs/repository-reference.md` and `docs/verification.md` before changing or releasing the project.
+This file is the canonical continuation and verification ledger for KeySmith. Read it together with `docs/repository-reference.md`, `docs/verification.md`, `docs/testing.md`, and `docs/release.md` before changing or releasing the project.
 
 ## Current release state
 
-KeySmith's planned `0.1.0` feature set, security boundaries, tests, repository automation, dependency lockfiles, and documentation are implemented. The final verification pull request performs the clean hosted-runner checks and contains the defects found during that process.
+KeySmith is now versioned as `2.0.12` across the Rust workspace, npm package, Tauri application configuration, and visible application version surfaces.
 
-`0.1.0` is **not yet declared stable in this file**. A stable tag must not be created until the final pull-request head is green for the required CI and CodeQL matrix and the packaged applications have completed the manual smoke-test/accessibility/screenshot gates in `docs/verification.md`.
+The implemented product scope, security boundaries, tests, repository automation, dependency lockfiles, and documentation are complete at the source level. PR #12 remains the release-candidate verification branch.
 
-The live check state for the current head is the check suite on PR #12. This ledger intentionally does not claim a pending check passed merely because an earlier commit passed or progressed farther.
+`2.0.12` is **not declared stable merely because the source version was changed**. A `v2.0.12` tag must not be created until the final post-version-bump PR head has the required CI and CodeQL matrix green and packaged applications complete the manual smoke/accessibility/screenshot gates in `docs/verification.md`.
+
+Any green result from a commit before the version bump is useful historical evidence but does not replace final-head verification.
+
+## Version 2.0.12 synchronization
+
+The following authoritative version surfaces are required to agree on `2.0.12`:
+
+- `Cargo.toml` workspace package version,
+- generated `Cargo.lock` entries for the KeySmith workspace crates,
+- `package.json` package version,
+- generated `package-lock.json` root package version,
+- `src-tauri/tauri.conf.json` application/bundle version,
+- footer version in `index.html`,
+- Settings version text in `index.html`,
+- About-dialog version text in `index.html`,
+- `CHANGELOG.md`,
+- `ROADMAP.md`,
+- this `what_changed.md` ledger,
+- PR #12 title/body and release notes where version-specific.
+
+The lockfiles must be regenerated from the updated manifests rather than left with stale KeySmith package versions.
 
 ## Implemented product scope
 
@@ -26,7 +47,11 @@ The live check state for the current head is the check suite on PR #12. This led
 - Rust 2024 workspace with a framework-independent `keysmith-core` crate.
 - Tauri 2 native adapter and Vanilla TypeScript/Vite frontend.
 - Windows, macOS, and Linux native bundle configuration.
-- Apache-2.0 license, NOTICE, security/privacy/support/community policies, contribution guide, code of conduct, issue forms, pull-request template, funding configuration, Dependabot, CI, CodeQL, and tag release workflow.
+- Apache-2.0 license and NOTICE.
+- Security, privacy, support, contribution, and community policies.
+- Structured issue forms and pull-request template.
+- Funding configuration and Dependabot.
+- CI, CodeQL, and tag-triggered release automation.
 - Tracked `Cargo.lock` and `package-lock.json` dependency graphs.
 - Locked dependency consumption in CI and release automation.
 - Architecture decisions under `docs/adr/`.
@@ -61,8 +86,8 @@ The live check state for the current head is the check suite on PR #12. This led
 - Frontend persistence rejects unsupported clipboard-clear values and falls back to the privacy-oriented 30-second default.
 - Auto-clear erases the clipboard only when it still contains the exact value KeySmith copied.
 - Explicit clear-now action.
-- Clipboard payload limit is 65,536 characters, which safely covers the maximum valid 500 × 128-character batch plus separators.
-- The clipboard command's Rust secret buffer is zeroized after use on successful and handled error paths where practical.
+- Clipboard payload limit is 65,536 characters, covering the maximum valid 500 × 128-character batch plus separators.
+- Command-owned Rust secret buffers are zeroized after handled clipboard operations/errors where practical.
 - OS clipboard/clipboard-manager copies remain outside KeySmith's memory-zeroization boundary.
 - Batch export is explicit plaintext, includes an in-product warning, and writes a warning header into the exported file.
 
@@ -77,7 +102,7 @@ The live check state for the current head is the check suite on PR #12. This led
 - Settings surfaces for appearance, privacy/data, accessibility, updates, and onboarding help.
 - About surface with version, Apache-2.0, repository, support/business contacts, Buy Me a Coffee, and `Made by the Sanskar`.
 - Keyboard tab navigation, skip link, visible focus, semantic controls/labels, aria-live status, reduced-motion support, responsive touch targets, and non-color-only status text.
-- Shared password policy is represented as a named group rather than a Password-only tab panel because it is also visible and active in Batch mode.
+- Shared password policy is represented as a named group because it is visible and active in both Password and Batch modes.
 - Editable SVG logo and native PNG/ICO/ICNS icons.
 
 ### Privacy/security boundaries
@@ -105,45 +130,27 @@ These are the only application local-storage keys intentionally maintained:
 
 Generated passwords, passphrases, batch values, strength inputs, custom symbols, clipboard contents, and export contents are not written to application local storage.
 
-## Automated tests and checks
+## Automated tests and permanent checks
 
 ### Rust core
 
-`crates/keysmith-core/tests/security.rs` covers security/policy behavior such as:
+`crates/keysmith-core/tests/security.rs` covers security/policy behavior including required enabled character classes, ambiguous-character exclusion, batch-size limits, and passphrase word-count behavior.
 
-- required enabled character classes,
-- ambiguous-character exclusion,
-- batch-size limits,
-- passphrase word-count behavior.
-
-`crates/keysmith-core/tests/properties.rs` includes property-based checks such as:
-
-- generated length across the complete supported 4–128 range,
-- digits-only output invariant.
+`crates/keysmith-core/tests/properties.rs` contains property-based checks including generated length across the supported 4–128 range and digits-only output invariants.
 
 ### Tauri desktop adapter
 
-`src-tauri/src/commands.rs` contains regression tests for:
-
-- the exact supported clipboard auto-clear duration set,
-- the clipboard payload limit remaining large enough for the maximum supported batch.
+`src-tauri/src/commands.rs` contains regression tests for the exact supported clipboard auto-clear duration set and for the clipboard payload limit remaining large enough for the maximum supported batch.
 
 The Linux desktop CI job runs `cargo test --locked -p keysmith --lib` in addition to the Tauri compile check.
 
 ### TypeScript
 
-`src/storage.test.ts` covers:
+`src/storage.test.ts` covers the privacy-oriented clipboard default, supported duration persistence, invalid stored-duration fallback, rejection of invalid duration writes, theme persistence, and first-run onboarding state.
 
-- privacy-oriented clipboard default,
-- supported clipboard duration persistence,
-- invalid stored duration fallback,
-- rejection of invalid clipboard setting writes,
-- theme persistence,
-- first-run onboarding completion state.
+### CI
 
-### Permanent CI gates
-
-`.github/workflows/ci.yml` currently runs:
+`.github/workflows/ci.yml` runs:
 
 - `npm ci`, TypeScript typecheck, ESLint, deterministic text-hygiene check, Vitest, and Vite production build,
 - Rust formatting,
@@ -153,92 +160,104 @@ The Linux desktop CI job runs `cargo test --locked -p keysmith --lib` in additio
 - locked desktop-adapter unit tests on Ubuntu,
 - Cargo lockfile metadata validation and `cargo-deny` dependency policy.
 
-The workflow cancels superseded pull-request runs so only the current head consumes the full matrix.
+Superseded PR runs are cancelled so only the latest head should consume the full matrix.
 
-`.github/workflows/codeql.yml` analyzes JavaScript/TypeScript and Rust on pull requests, `main`, and its scheduled run, with superseded PR runs cancelled.
+### CodeQL
 
-`.github/workflows/release.yml` creates draft Windows/macOS/Linux release artifacts from version tags using `npm ci` and the tracked Cargo lockfile. Signing/notarization credentials are deliberately not stored in the repository.
+`.github/workflows/codeql.yml` analyzes JavaScript/TypeScript and Rust on pull requests, pushes to `main`, and the scheduled run. Superseded PR runs are cancelled.
 
-## Final verification work performed on PR #12
+### Release workflow
 
-### Clean-run defect 1 — incorrect Cargo dependency name
+`.github/workflows/release.yml` creates draft Windows/macOS/Linux release artifacts from version tags using `npm ci` and the tracked Cargo lockfile. Signing/notarization credentials are intentionally not stored in the repository.
 
-The first real hosted Linux Tauri compiler run failed during dependency resolution. Cargo reported that no package named `eff_wordlist` could be found and identified the package as `eff-wordlist`.
+## Defects found and fixed during final verification
+
+### Incorrect Cargo dependency package name
+
+The first clean hosted Linux Tauri compile failed during dependency resolution because the package key was written as `eff_wordlist`. Cargo identified the published package as `eff-wordlist`.
 
 Resolution:
 
-- corrected `crates/keysmith-core/Cargo.toml` from the invalid package key `eff_wordlist` to `eff-wordlist`,
-- retained the correct Rust import name `eff_wordlist` in source,
-- reran the PR through the clean hosted pipeline.
+- corrected `crates/keysmith-core/Cargo.toml` to `eff-wordlist`,
+- retained the correct Rust import name `eff_wordlist`,
+- verified a later locked Ubuntu Tauri compile successfully passed before the 2.0.12 version update.
 
-This was a real release-blocking manifest defect discovered by verification, not a documentation-only issue.
+### Obsolete duplicate Rust workflow
 
-### Clean-run defect 2 — obsolete duplicate Rust workflow
-
-The repository contained an older `.github/workflows/rust.yml` workflow that duplicated Rust coverage while attempting a whole Tauri workspace build on Ubuntu without installing the Linux Tauri system prerequisites.
+An older `.github/workflows/rust.yml` duplicated Rust coverage while trying to build the Tauri workspace on Ubuntu without installing the required Linux native prerequisites.
 
 Resolution:
 
 - removed the obsolete workflow,
 - retained `.github/workflows/ci.yml` as the authoritative quality matrix,
-- kept the explicit Linux dependency installation in the maintained Tauri job.
+- retained explicit Tauri Linux dependency installation in the maintained desktop job.
 
-### Clipboard hardening defects
+### Clipboard command hardening
 
-The clipboard adapter accepted an arbitrary `clear_after_seconds` value from IPC and some early-return error paths could bypass final zeroization of the command-owned secret string.
+The clipboard adapter accepted arbitrary `clear_after_seconds` IPC values and some early-return paths could bypass final zeroization of the command-owned secret string.
 
 Resolution:
 
-- allowlisted only `0`, `15`, `30`, `60`, and `120` seconds at the native boundary,
-- structured clipboard handling so the command-owned secret is zeroized after handled clipboard operations/errors,
-- added adapter regression coverage.
+- allowlisted `0`, `15`, `30`, `60`, and `120` seconds at the native boundary,
+- structured clipboard handling so the command-owned secret is zeroized after handled operations/errors,
+- added adapter regression tests.
 
 ### Maximum Batch copy defect
 
-The valid maximum batch contains up to 500 passwords × 128 characters plus separators, but the clipboard adapter previously rejected any payload above 4,096 characters. Therefore a UI-supported maximum batch could not be copied in full.
+A valid maximum Batch can contain 500 passwords × 128 characters plus separators, while the clipboard adapter previously rejected payloads above 4,096 characters.
 
 Resolution:
 
-- raised the guarded maximum clipboard character count to 65,536,
-- added a regression test proving that the maximum supported batch plus separators fits within that boundary.
+- raised the guarded clipboard limit to 65,536 characters,
+- added a regression test proving the maximum supported Batch plus separators fits the boundary.
 
 ### Persisted clipboard preference validation
 
-The UI writes only predefined durations, but previously the persistence helper would store any numeric value supplied programmatically.
+The UI offered only supported values, but the persistence helper accepted arbitrary numeric writes.
 
 Resolution:
 
-- centralized the supported duration set in `src/storage.ts`,
+- centralized the supported values in `src/storage.ts`,
 - invalid stored values fall back to 30 seconds,
 - unsupported writes are ignored,
-- added a Vitest regression test.
+- added Vitest coverage.
 
 ### Batch policy visibility/accessibility defect
 
-Batch generation used the password option state while the password controls were hidden in Batch mode, so users could generate a batch with policy values they could not see or edit in that mode. The original Password panel semantics also became incorrect once the controls were shared.
+Batch generation used password-policy state while those controls were hidden in Batch mode. The original Password-only tab-panel semantics also became inaccurate once the controls were shared.
 
 Resolution:
 
-- keep the password-policy controls visible in Password and Batch modes,
-- show a Batch hint that the policy above is used,
-- represent the shared controls as a named `Password policy` group instead of a Password-only tab panel.
+- keep password-policy controls visible in Password and Batch modes,
+- explicitly state that Batch uses the policy shown above,
+- represent the shared controls as a named `Password policy` group.
 
 ### Dependency reproducibility gap
 
-The repository did not initially contain npm or Cargo lockfiles because the prior execution shell lacked normal registry access.
+The repository initially lacked npm and Cargo lockfiles because the earlier local execution shell could not access package registries normally.
 
 Resolution:
 
-- generated `package-lock.json` with npm's package-lock-only mode while lifecycle scripts were disabled,
+- generated `package-lock.json` with npm package-lock-only mode and lifecycle scripts disabled,
 - generated `Cargo.lock` on a clean GitHub hosted runner,
 - committed both lockfiles,
-- removed the temporary branch-only write-capable lockfile workflow immediately afterward,
-- converted permanent CI and release jobs to `npm ci` and locked Cargo resolution,
-- synchronized setup/development/testing/release/verification/README documentation with the locked workflow.
+- removed the temporary branch-only write-capable workflow after use,
+- converted permanent CI/release automation to `npm ci` and locked Cargo resolution,
+- synchronized setup/development/testing/release/verification/README documentation with that model.
+
+## Verification evidence before the 2.0.12 version update
+
+On PR #12 head `fae6d30ac819159a28efea4927ce58cd8ec2f21a`, before changing the release version:
+
+- Ubuntu Tauri job completed successfully, including `npm ci`, `cargo check --locked -p keysmith --all-targets`, and desktop-adapter unit tests.
+- JavaScript/TypeScript CodeQL completed successfully.
+- Other final-head jobs were still queued/in progress when the explicit request to change the release to `2.0.12` arrived.
+
+Because version-bearing files changed after that evidence, the new `2.0.12` head must be verified again. Do not transfer final-release status from `fae6d30a` to the post-version-bump head.
 
 ## Documentation set
 
-The maintained documentation now includes:
+The maintained documentation includes:
 
 - `README.md`
 - `LICENSE`
@@ -268,22 +287,22 @@ The maintained documentation now includes:
 - `docs/adr/0002-os-csprng-and-no-secret-storage.md`
 - `.github/RELEASE_TEMPLATE.md`
 
-`docs/repository-reference.md` is the deep file-by-file codebase map; update it whenever tracked project structure changes.
+`docs/repository-reference.md` is the deep file-by-file codebase map and must be updated whenever tracked project structure changes.
 
 ## Dependency reproducibility contract
 
 - `package.json` and `package-lock.json` must stay synchronized.
 - Clean verification/release installs use `npm ci`.
-- `Cargo.toml` manifests and `Cargo.lock` must stay synchronized.
-- CI/release Cargo commands use the tracked graph with `--locked` where supported or validate it using locked metadata.
-- Dependency-manifest changes and corresponding lockfile changes belong in the same pull request.
-- Do not add a permanent workflow with repository write permission solely for dependency generation.
+- Rust manifests and `Cargo.lock` must stay synchronized.
+- CI/release Cargo commands use the tracked graph with `--locked` where supported or validate it through locked metadata.
+- Dependency/version manifest changes and corresponding lockfile changes belong in the same pull request.
+- Temporary write-capable automation used for lockfile regeneration must be branch-scoped, must not run lifecycle scripts for package-lock-only generation, and must be removed immediately after the generated lockfiles are committed.
 
-## Verification required before stable `0.1.0`
+## Verification required before stable 2.0.12
 
 The authoritative command and packaged-app checklist is `docs/verification.md`.
 
-Do not call `0.1.0` stable until the final PR/release-candidate commit has direct evidence for:
+Do not call `2.0.12` stable until the final PR/release-candidate commit has direct evidence for:
 
 1. `npm ci`
 2. `npm run typecheck`
@@ -303,7 +322,7 @@ Do not call `0.1.0` stable until the final PR/release-candidate commit has direc
 16. keyboard/accessibility manual review
 17. real release screenshots from the verified packaged build
 
-When automated checks are still pending or queued, PR #12's live checks are the source of truth. Do not infer success from configuration alone.
+When automated checks are pending or queued, PR #12's live checks are the source of truth. Do not infer success from configuration alone.
 
 ## Known limitations / deliberate design decisions
 
@@ -313,35 +332,39 @@ When automated checks are still pending or queued, PR #12's live checks are the 
 - Clipboard security depends on the operating system; other processes or clipboard managers can observe values before a clear operation.
 - KeySmith can zeroize application-owned Rust buffers where practical but cannot promise zeroization of OS clipboard internals, webview/runtime copies, allocator remnants, or external clipboard-manager history.
 - No silent automatic update check is implemented because normal product operation does not require network access.
-- Real release screenshots are intentionally deferred until they can be captured from a verified packaged release candidate; placeholder screenshots are not presented as real output.
-- Branch protection should use the actual check names proven by the final green PR matrix rather than guessed names.
+- Real release screenshots are intentionally deferred until they can be captured from a verified packaged release candidate; placeholders are not presented as real output.
+- Branch protection should use exact check names proven by the final green `2.0.12` PR matrix.
 - Platform signing/notarization requires external/protected credentials and therefore is not represented as repository source material.
 
 ## Remaining exact release tasks
 
-1. Keep PR #12 open until its **final head** has the complete CI and CodeQL matrix green; inspect every failed job log and fix the root cause rather than rerunning blindly.
-2. If a behavior/security defect is found, add a regression test at the closest stable layer before considering it resolved.
-3. Build native release candidates on Windows, macOS, and Linux using the tracked lockfiles.
-4. Run every packaged-app smoke/accessibility step in `docs/verification.md`, including maximum Batch copy and all clipboard durations.
-5. Capture real release screenshots from the verified packaged application and add them to the README/release material.
-6. Enable `main` branch protection using the proven required-check names.
-7. Set the actual release date in `CHANGELOG.md` only after the stable gate is satisfied.
-8. Tag the verified stable commit as `v0.1.0` and let the release workflow create draft artifacts.
-9. Inspect/sign/notarize artifacts as applicable before publishing the GitHub Release.
+1. Regenerate `Cargo.lock` and `package-lock.json` from the `2.0.12` manifests and commit the updated lockfiles.
+2. Remove any temporary lockfile-generation workflow immediately after it has produced the lockfile commit.
+3. Keep PR #12 open until its post-version-bump final head has the complete CI and CodeQL matrix green; inspect every failed job log and fix root causes rather than rerunning blindly.
+4. If another behavior/security defect is found, add a regression test at the closest stable layer before considering it resolved.
+5. Build native `2.0.12` release candidates on Windows, macOS, and Linux using tracked lockfiles.
+6. Run every packaged-app smoke/accessibility step in `docs/verification.md`, including maximum Batch copy and all clipboard durations.
+7. Capture real release screenshots from verified packaged applications and add them to README/release material.
+8. Enable `main` branch protection using the proven required-check names.
+9. Set the actual `2.0.12` release date in `CHANGELOG.md` only after the stable gate is satisfied.
+10. Tag the verified stable commit as `v2.0.12` and let the release workflow create draft artifacts.
+11. Inspect/sign/notarize artifacts as applicable before publishing the GitHub Release.
 
 ## Migration notes
 
-There is no credential database and therefore no secret-data migration. Future preference schema changes must preserve safe defaults and must never turn local preference storage into credential history.
+There is no credential database and therefore no secret-data migration. The version change to `2.0.12` does not introduce secret-data migration. Future preference schema changes must preserve safe defaults and must never turn local preference storage into credential history.
 
-## Release notes draft — 0.1.0
+## Release notes draft — 2.0.12
 
-KeySmith 0.1.0 introduces an offline-first desktop password and passphrase generator with operating-system cryptographic randomness, unbiased random selection, EFF Diceware passphrases, zxcvbn strength estimates, configurable password policies and presets, Batch generation, guarded plaintext export, conditional clipboard auto-clear, first-run onboarding, privacy/accessibility/settings surfaces, locked reproducible dependencies, cross-platform Tauri packaging configuration, deep security/architecture/repository documentation, and automated quality/security workflows.
+KeySmith 2.0.12 is an offline-first desktop password and passphrase generator with operating-system cryptographic randomness, unbiased random selection, EFF Diceware passphrases, zxcvbn strength estimates, configurable password policies and presets, Batch generation, guarded plaintext export, conditional clipboard auto-clear, first-run onboarding, privacy/accessibility/settings surfaces, tracked reproducible dependencies, cross-platform Tauri packaging configuration, deep security/architecture/repository documentation, and automated quality/security workflows.
+
+Final verification hardening for 2.0.12 includes corrected EFF package resolution, clipboard trust-boundary validation, secret-buffer cleanup improvements, maximum Batch-copy support, persistence validation, Batch-policy accessibility corrections, desktop-adapter regression tests, locked dependency workflows, and removal of obsolete CI automation.
 
 No account, telemetry, cloud sync, or password-history service is included.
 
-## Final-verification commit trail
+## Important verification commits
 
-The verification PR intentionally uses granular commits. Important commits include:
+The verification PR intentionally uses granular commits. Important pre-2.0.12 commits include:
 
 - `0ed88f7c` — `docs: add release verification runbook`
 - `c03d2298` — `ci: remove obsolete duplicate Rust workflow`
@@ -355,24 +378,24 @@ The verification PR intentionally uses granular commits. Important commits inclu
 - `57e97b4d` — `fix: validate persisted clipboard settings`
 - `3e5c39b2` — `test: cover invalid clipboard preference writes`
 - `9f5bb03c` — `fix: expose password policy in batch mode`
-- `52c75a9e` — `docs: expand README documentation and verification map`
-- `684af5b4` — `docs: expand testing and regression strategy`
-- `a47c0225` — `docs: make release process evidence driven`
-- `69a4edec` — `docs: record final verification fixes in changelog`
 - `9a663ef8` — `build: commit reproducible dependency lockfiles`
 - `a51884d6` — `ci: remove temporary lockfile generation workflow`
 - `f569c465` — `ci: enforce locked dependency installs`
 - `b27144cc` — `ci: enforce release lockfiles`
 - `2694e505` — `fix: align batch accessibility and repository link`
-- `fb3b67f1` — `docs: enforce locked release verification commands`
-- `95f73e0c` — `docs: use lockfiles in setup instructions`
-- `2befb204` — `docs: align development workflow with locked CI`
-- `ed000a37` — `docs: align testing with reproducible dependency gates`
-- `1115c7ce` — `docs: use locked dependencies in README`
-- `83faba3a` — `docs: record tracked dependency lockfiles`
-- `c1467382` — `docs: finalize verification changelog entries`
+- `fae6d30a` — `docs: update final verification handoff ledger`
 
-The initial pre-verification implementation history remains on `main` and is not repeated here; inspect Git history for the complete granular trail.
+Version 2.0.12 commits started with:
+
+- `95f688d0` — `release: set Rust workspace version to 2.0.12`
+- `06ea6548` — `release: set npm package version to 2.0.12`
+- `9c9ad6ab` — `release: set Tauri app version to 2.0.12`
+- `a3f1a8f3` — `release: show version 2.0.12 in the UI`
+- `79953491` — `docs: prepare changelog for version 2.0.12`
+- `3f1ac5e8` — `docs: align roadmap with 2.0.12 release candidate`
+- `5f88d2de` — `docs: update GitHub operations for 2.0.12`
+
+Continue recording version/verification commits here when they materially change release status.
 
 ## Commit identity
 
