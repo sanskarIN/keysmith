@@ -8,6 +8,12 @@ function loadDocument(html: string): void {
   document.body.innerHTML = parsed.body.innerHTML;
 }
 
+function hasLabel(control: HTMLInputElement | HTMLSelectElement): boolean {
+  if (control.getAttribute("aria-label")?.trim()) return true;
+  if (control.id && document.querySelector(`label[for="${control.id}"]`)) return true;
+  return control.closest("label") !== null;
+}
+
 describe("static accessibility contract", () => {
   beforeAll(async () => {
     const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
@@ -26,8 +32,16 @@ describe("static accessibility contract", () => {
     }
   });
 
-  it("connects every generator tab to a tabpanel", () => {
-    const tabs = document.querySelectorAll<HTMLElement>('[role="tab"]');
+  it("gives every input and select an associated accessible label", () => {
+    for (const control of document.querySelectorAll<HTMLInputElement | HTMLSelectElement>(
+      "input, select",
+    )) {
+      expect(hasLabel(control)).toBe(true);
+    }
+  });
+
+  it("connects every generator tab to a tabpanel and starts with one active tab", () => {
+    const tabs = Array.from(document.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
     expect(tabs.length).toBeGreaterThan(0);
 
     for (const tab of tabs) {
@@ -37,6 +51,9 @@ describe("static accessibility contract", () => {
         expect(document.getElementById(controls)?.getAttribute("role")).toBe("tabpanel");
       }
     }
+
+    expect(tabs.filter((tab) => tab.getAttribute("aria-selected") === "true")).toHaveLength(1);
+    expect(tabs.filter((tab) => tab.tabIndex === 0)).toHaveLength(1);
   });
 
   it("gives every button visible text or an explicit accessible label", () => {
@@ -44,6 +61,15 @@ describe("static accessibility contract", () => {
       const visibleText = button.textContent?.trim() ?? "";
       const ariaLabel = button.getAttribute("aria-label")?.trim() ?? "";
       expect(visibleText.length > 0 || ariaLabel.length > 0).toBe(true);
+    }
+  });
+
+  it("keeps native external actions as non-submit buttons with declared destinations", () => {
+    const actions = document.querySelectorAll<HTMLButtonElement>("[data-external-url]");
+    expect(actions.length).toBeGreaterThan(0);
+    for (const action of actions) {
+      expect(action.type).toBe("button");
+      expect(action.dataset.externalUrl?.length).toBeGreaterThan(0);
     }
   });
 
