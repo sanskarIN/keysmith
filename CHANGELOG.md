@@ -2,7 +2,7 @@
 
 All notable changes follow a Keep a Changelog style and Semantic Versioning.
 
-## [Unreleased]
+## [2.0.12] - TBD
 
 ### Added
 - Rust core with OS-backed cryptographic password generation and policy validation.
@@ -17,7 +17,8 @@ All notable changes follow a Keep a Changelog style and Semantic Versioning.
 - Tracked `Cargo.lock` and `package-lock.json` files for reproducible dependency resolution.
 
 ### Changed
-- CI and release automation now consume npm dependencies with `npm ci` and verify/use the tracked Cargo graph with locked commands.
+- Promoted the release-candidate version line to `2.0.12` across Rust workspace metadata, npm metadata, Tauri configuration, and visible application version surfaces.
+- CI and release automation consume npm dependencies with `npm ci` and verify/use the tracked Cargo graph with locked commands.
 - Batch mode explicitly identifies the shared password policy in the UI and accessibility structure.
 - The About dialog links directly to the KeySmith repository.
 
@@ -30,6 +31,4 @@ All notable changes follow a Keep a Changelog style and Semantic Versioning.
 - Removed an obsolete duplicate Rust workflow that did not install Tauri's Linux system dependencies.
 - Added workflow concurrency cancellation so superseded pull-request verification runs do not consume unnecessary runners.
 
-## [0.1.0] - TBD
-
-Initial public preview release. Release date will be set only after clean multi-platform CI and release-candidate verification.
+The release date remains `TBD` until the final `2.0.12` commit passes the complete automated matrix and packaged-app verification defined in `docs/verification.md`.
