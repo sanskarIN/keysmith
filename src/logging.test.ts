@@ -24,6 +24,26 @@ describe("structured log redaction", () => {
     });
   });
 
+  it("redacts credential, API-key, session, and private-key fields", () => {
+    const redacted = redactForLog({
+      credential: "fictional",
+      apiKey: "fictional",
+      api_key: "fictional",
+      sessionId: "fictional",
+      privateKey: "fictional",
+      private_key: "fictional",
+    });
+
+    expect(redacted).toEqual({
+      credential: "[REDACTED]",
+      apiKey: "[REDACTED]",
+      api_key: "[REDACTED]",
+      sessionId: "[REDACTED]",
+      privateKey: "[REDACTED]",
+      private_key: "[REDACTED]",
+    });
+  });
+
   it("truncates deeply nested data instead of traversing without bound", () => {
     const redacted = redactForLog({
       level1: { level2: { level3: { level4: { level5: { value: 1 } } } } },
