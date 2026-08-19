@@ -323,12 +323,10 @@ function bindEvents(): void {
       }
     });
   });
-  document.querySelectorAll<HTMLAnchorElement>(".link-stack a[href]").forEach((link) => {
-    link.addEventListener("click", (event) => {
-      const url = link.getAttribute("href");
-      if (!url) return;
-      event.preventDefault();
-      void openExternalLink(url);
+  document.querySelectorAll<HTMLButtonElement>("[data-external-url]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const url = button.dataset.externalUrl;
+      if (url) void openExternalLink(url);
     });
   });
   ui.generate.addEventListener("click", () => void generate());
