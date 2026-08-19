@@ -6,6 +6,7 @@
   "permissions": [
     "keysmith-generation",
     "keysmith-clipboard",
+    "keysmith-export",
     {
       "identifier": "opener:allow-open-url",
       "allow": [
