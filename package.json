@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint src vite.config.ts",
+    "lint": "eslint src scripts vite.config.ts",
     "format": "prettier --write .",
     "format:check": "node scripts/check-format.mjs",
     "secret:check": "node scripts/check-secrets.mjs",
