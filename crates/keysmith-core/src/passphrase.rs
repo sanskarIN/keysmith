@@ -12,9 +12,7 @@ pub fn generate_passphrase(options: &PassphraseOptions) -> Result<String, KeySmi
     if !(3..=12).contains(&options.words) {
         return Err(KeySmithError::InvalidWordCount);
     }
-    if options.separator.chars().count() > 3
-        || options.separator.chars().any(char::is_control)
-    {
+    if options.separator.chars().count() > 3 || options.separator.chars().any(char::is_control) {
         return Err(KeySmithError::InvalidSeparator);
     }
 
