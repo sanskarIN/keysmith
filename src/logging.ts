@@ -1,4 +1,5 @@
-const SENSITIVE_KEY = /(?:authorization|cookie|email|passphrase|password|secret|token)/i;
+const SENSITIVE_KEY =
+  /(?:api[_-]?key|authorization|cookie|credential|email|passphrase|password|private[_-]?key|secret|session|token)/i;
 const MAX_DEPTH = 4;
 
 export type SafeLogScalar = string | number | boolean | null;
