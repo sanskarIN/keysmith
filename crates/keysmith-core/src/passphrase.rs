@@ -1,4 +1,5 @@
 use crate::{KeySmithError, PassphraseOptions, random};
+use zeroize::Zeroize;
 
 fn capitalize_ascii(word: &str) -> String {
     let mut chars = word.chars();
@@ -29,6 +30,7 @@ pub fn generate_passphrase(options: &PassphraseOptions) -> Result<String, KeySmi
     }
 
     let mut phrase = words.join(&options.separator);
+    words.zeroize();
     if options.include_number {
         let number = random::uniform_index(100)?;
         phrase.push_str(&format!("{number:02}"));
