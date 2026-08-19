@@ -72,8 +72,8 @@ pub fn generate_batch_command(
 
 #[tauri::command]
 pub fn generate_passphrase_command(options: PassphraseOptions) -> Result<PassphraseResult, String> {
-    let estimated_entropy_bits = keysmith_core::estimated_passphrase_entropy_bits(&options);
     let secret = generate_passphrase(&options).map_err(|error| error.to_string())?;
+    let estimated_entropy_bits = keysmith_core::estimated_passphrase_entropy_bits(&options);
     let strength = estimate_strength(&secret);
     Ok(PassphraseResult {
         secret,
