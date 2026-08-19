@@ -22,8 +22,9 @@ KeySmith is a desktop utility for Windows, macOS, and Linux. Passwords and passp
 - Batch generation up to 500 items with explicit export safety warnings.
 - Clipboard auto-clear that clears only if the clipboard still contains the copied secret.
 - Light, dark, and system themes with keyboard-first accessibility.
+- English-first, internationalization-ready frontend with externalized UI strings and tested fallback behavior.
 - Offline-by-design architecture with restrictive Tauri CSP and least-privilege capabilities.
-- Security, privacy, threat-model, testing, accessibility, release, and architecture documentation.
+- Security, privacy, threat-model, testing, accessibility, release, localization, and architecture documentation.
 
 ## Screenshots
 
@@ -77,7 +78,7 @@ cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo test --workspace --all-features
 ```
 
-See [`docs/development.md`](docs/development.md), [`docs/testing.md`](docs/testing.md), and [`docs/logging.md`](docs/logging.md).
+See [`docs/development.md`](docs/development.md), [`docs/testing.md`](docs/testing.md), [`docs/logging.md`](docs/logging.md), and [`docs/i18n.md`](docs/i18n.md).
 
 ## Build and release
 
@@ -90,11 +91,11 @@ The Tauri bundler produces platform-native artifacts. Release signing credential
 
 ## Architecture
 
-The security-sensitive generation logic lives in `crates/keysmith-core` and has no UI dependency. `src-tauri` exposes a narrow IPC command surface. The TypeScript layer renders the UI and stores only non-secret preferences in local storage. Passwords are never persisted. See [`docs/architecture.md`](docs/architecture.md) and [`docs/adr/`](docs/adr/).
+The security-sensitive generation logic lives in `crates/keysmith-core` and has no UI dependency. `src-tauri` exposes a narrow IPC command surface. The TypeScript layer renders the UI, externalizes user-facing copy, and stores only non-secret preferences in local storage. Passwords are never persisted. See [`docs/architecture.md`](docs/architecture.md), [`docs/i18n.md`](docs/i18n.md), and [`docs/adr/`](docs/adr/).
 
 ## Security and privacy
 
-KeySmith does not log generated secrets, transmit them, or retain a password history. Clipboard use is explicit and optional. Batch exports are plaintext by design and therefore carry a prominent warning. CI also checks dependency policy, common high-confidence secret patterns, and CodeQL findings.
+KeySmith does not log generated secrets, transmit them, or retain a password history. Clipboard use is explicit and optional. Batch exports are plaintext by design and therefore carry a prominent warning. Rust validates security-sensitive generation inputs at the IPC boundary instead of trusting HTML constraints. CI also checks dependency policy, common high-confidence secret patterns, and CodeQL findings.
 
 Read [`SECURITY.md`](SECURITY.md), [`PRIVACY.md`](PRIVACY.md), [`THREAT_MODEL.md`](THREAT_MODEL.md), and [`docs/logging.md`](docs/logging.md) before making security-sensitive changes.
 
