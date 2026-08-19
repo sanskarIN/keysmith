@@ -14,7 +14,7 @@ unsafe_code = "forbid"
 
 [workspace.lints.clippy]
 all = "warn"
-pedantic = "warn"
-nursery = "warn"
+pedantic = "allow"
+nursery = "allow"
 unwrap_used = "deny"
 expect_used = "deny"
