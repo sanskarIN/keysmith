@@ -75,6 +75,7 @@ let mode: GeneratorMode = "password";
 let currentSecret = "";
 let batch: BatchSecretResult[] = [];
 let presets: PasswordPreset[] = [];
+let generationRevision = 0;
 
 function passwordOptions(): PasswordOptions {
   const symbols = ui.customSymbols.value.trim();
@@ -134,14 +135,23 @@ function resetOutput(): void {
   ui.strengthScore.textContent = "";
 }
 
+function generationIsCurrent(revision: number, requestMode: GeneratorMode): boolean {
+  return revision === generationRevision && requestMode === mode;
+}
+
 async function generate(): Promise<void> {
+  const revision = ++generationRevision;
+  const requestMode = mode;
   setBusy(true);
   setStatus("");
   try {
-    if (mode === "password") {
-      renderSecret(await api.generatePassword(passwordOptions()));
-    } else if (mode === "passphrase") {
+    if (requestMode === "password") {
+      const result = await api.generatePassword(passwordOptions());
+      if (!generationIsCurrent(revision, requestMode)) return;
+      renderSecret(result);
+    } else if (requestMode === "passphrase") {
       const result = await api.generatePassphrase(passphraseOptions());
+      if (!generationIsCurrent(revision, requestMode)) return;
       renderSecret(result);
       setStatus(
         `${en.generated} ${en.estimatedEntropy}: ${result.estimatedEntropyBits.toFixed(1)} bits.`,
@@ -149,7 +159,9 @@ async function generate(): Promise<void> {
       return;
     } else {
       const count = Number(ui.batchCount.value);
-      batch = await api.generateBatch(passwordOptions(), count);
+      const result = await api.generateBatch(passwordOptions(), count);
+      if (!generationIsCurrent(revision, requestMode)) return;
+      batch = result;
       currentSecret = "";
       ui.output.textContent = batch
         .map((item, index) => `${index + 1}. ${item.secret}`)
@@ -163,10 +175,11 @@ async function generate(): Promise<void> {
     }
     setStatus(en.generated);
   } catch (error) {
+    if (!generationIsCurrent(revision, requestMode)) return;
     const message = error instanceof Error ? error.message : String(error);
     setStatus(`${en.generationFailed} ${message}`, true);
   } finally {
-    setBusy(false);
+    if (revision === generationRevision) setBusy(false);
   }
 }
 
@@ -213,6 +226,8 @@ function setPanelVisibility(panel: HTMLElement, visible: boolean): void {
 }
 
 function switchMode(next: GeneratorMode): void {
+  generationRevision += 1;
+  setBusy(false);
   mode = next;
   document.querySelectorAll<HTMLButtonElement>("[data-mode]").forEach((tab) => {
     const selected = tab.dataset.mode === next;
