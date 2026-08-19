@@ -52,13 +52,13 @@ describe("Tauri security configuration", () => {
     expect(devCsp).toContain("style-src 'self' 'unsafe-inline'");
   });
 
-  it("keeps main capability narrow and excludes Tauri core defaults", async () => {
+  it("keeps main capability narrow and excludes broad frontend-native defaults", async () => {
     const capability = await readJson<CapabilityFile>(
       "../src-tauri/capabilities/default.json",
     );
-    const identifiers = capability.permissions.map((permission) =>
-      typeof permission === "string" ? permission : permission.identifier,
-    );
+    const identifiers = capability.permissions
+      .map((permission) => (typeof permission === "string" ? permission : permission.identifier))
+      .filter((identifier): identifier is string => typeof identifier === "string");
 
     expect(capability.identifier).toBe("main-capability");
     expect(identifiers).not.toContain("core:default");
@@ -66,5 +66,8 @@ describe("Tauri security configuration", () => {
     expect(identifiers).toContain("keysmith-clipboard");
     expect(identifiers).toContain("keysmith-export");
     expect(identifiers).toContain("opener:allow-open-url");
+    expect(identifiers.some((identifier) => identifier.startsWith("fs:"))).toBe(false);
+    expect(identifiers.some((identifier) => identifier.startsWith("shell:"))).toBe(false);
+    expect(identifiers.some((identifier) => identifier.startsWith("dialog:"))).toBe(false);
   });
 });
