@@ -1,317 +1,148 @@
 # KeySmith Repository Reference
 
-This document is the canonical file-by-file inventory for the KeySmith repository. It exists to make repository review, maintenance, onboarding, security auditing, and documentation-completeness checks deterministic.
-
-Every committed project file on the `docs/full-repository-reference` documentation checkpoint is listed below, including hidden configuration files, GitHub automation, source code, tests, documentation, application assets, and native binary icon files. Directories are described through their contained files rather than as separate artifacts.
-
-When a new file is added to the repository, add it here in the same pull request.
-
-## Root configuration and metadata
-
-### `.editorconfig`
-Defines cross-editor whitespace, indentation, charset, and newline conventions. It helps contributors produce files compatible with the repository's deterministic text-hygiene checks.
-
-### `.env.example`
-Documents the environment-file convention without containing credentials. KeySmith does not require secret environment variables for normal generation. Real `.env` files must remain uncommitted.
-
-### `.gitattributes`
-Defines repository-level Git attribute behavior, including text normalization expectations. It works with `.editorconfig` and the text-hygiene script to reduce platform-specific line-ending drift.
-
-### `.gitignore`
-Excludes generated build output, dependencies, local environment files, editor artifacts, and other non-source files. It is part of the secret-prevention boundary because local `.env`-style data must not be committed accidentally.
-
-### `Cargo.toml`
-Rust workspace manifest. It declares `crates/keysmith-core` and `src-tauri` as workspace members, centralizes version/license/author/repository metadata, selects Rust 2024, forbids unsafe Rust through workspace lint policy, and denies `unwrap`/`expect` use through Clippy policy.
-
-### `package.json`
-Frontend/tooling manifest. It defines the application version, Vite/TypeScript/Vitest/ESLint/Prettier/Tauri CLI development dependencies, and npm scripts for development, type checking, linting, text hygiene, tests, builds, and Tauri commands.
-
-### `tsconfig.json`
-Strict TypeScript compiler configuration. It enables strict typing, `noUncheckedIndexedAccess`, bundler-style module resolution, DOM libraries, isolated modules, and no-emission type checking.
-
-### `vite.config.ts`
-Vite configuration for the Tauri frontend. It fixes development port 1420, ignores Tauri source changes in the frontend watcher, permits only expected environment-variable prefixes, and selects production webview targets/minification/source-map behavior from Tauri environment data.
-
-### `eslint.config.js`
-Typed ESLint flat configuration for the TypeScript frontend and Vite config. It uses type-aware recommended rules and explicitly errors on floating promises.
-
-### `rustfmt.toml`
-Repository Rust formatting configuration consumed by `cargo fmt`.
-
-### `deny.toml`
-`cargo-deny` policy covering advisories, allowed open-source licenses, duplicate-version warnings, wildcard dependency rejection, and untrusted registry/Git-source rejection.
-
-### `index.html`
-The complete semantic application shell. It contains the top bar, generator tabs, Password/Passphrase/Batch controls, live output/status regions, privacy controls, onboarding, Settings, About dialog, project/contact links, visible product version, and accessibility semantics used by `src/main.ts`.
-
-## Root project documentation and governance
-
-### `README.md`
-Primary public project landing page. It introduces KeySmith, security/privacy highlights, supported platforms, technology stack, setup commands, development checks, build/release guidance, architecture links, contribution rules, licensing, and contact/support links.
-
-### `CHANGELOG.md`
-Human-readable release history following the project's release/versioning workflow. User-visible changes should be recorded here before a stable tag is created.
-
-### `ROADMAP.md`
-Forward-looking product/engineering milestones. Roadmap items are intentions rather than implemented guarantees; current behavior is documented elsewhere.
-
-### `CONTRIBUTING.md`
-Contributor workflow and quality/security expectations for code and documentation changes.
-
-### `CODE_OF_CONDUCT.md`
-Community participation and conduct expectations for repository interactions.
-
-### `SECURITY.md`
-Security reporting policy and guidance for responsible vulnerability disclosure. Security-sensitive reports should follow this document rather than public issue templates where disclosure would be harmful.
-
-### `PRIVACY.md`
-Product privacy commitments, including no account, telemetry, password history, or intentional secret persistence and the limited non-secret preference model.
-
-### `THREAT_MODEL.md`
-Security model covering protected assets, trust boundaries, attacker capabilities, mitigations, and residual risks such as clipboard exposure and plaintext exports.
-
-### `SUPPORT.md`
-Support channels and guidance for obtaining help without exposing credentials or other sensitive data.
-
-### `LICENSE`
-Apache License 2.0 text governing the KeySmith project itself. Third-party dependencies retain their own licenses.
-
-### `NOTICE`
-Project notice/attribution information accompanying the Apache-2.0 distribution.
-
-### `what_changed.md`
-Canonical development handoff and verification ledger. It records the current milestone, completed implementation, tests, verification status, limitations, exact next tasks, migration notes, release draft, and recent commits so future work can continue without reconstructing repository history.
-
-## GitHub repository automation and templates
-
-### `.github/FUNDING.yml`
-GitHub Sponsors-area funding configuration pointing users to the project's external Buy Me a Coffee support page.
-
-### `.github/dependabot.yml`
-Automated dependency-update configuration for Cargo, npm, and GitHub Actions ecosystems.
-
-### `.github/pull_request_template.md`
-Pull-request checklist prompting contributors to cover behavior, tests, documentation, security/privacy impact, and quality gates.
-
-### `.github/RELEASE_TEMPLATE.md`
-Maintainer release-notes template used to produce consistent release descriptions and verification information.
-
-### `.github/ISSUE_TEMPLATE/bug_report.yml`
-Structured bug-report form. It asks for reproducible information while discouraging unsafe disclosure of generated credentials.
-
-### `.github/ISSUE_TEMPLATE/feature_request.yml`
-Structured feature-request form for product and engineering proposals.
-
-### `.github/ISSUE_TEMPLATE/config.yml`
-Issue-template routing and contact-link configuration, including paths for support/security topics that should not use a normal public issue.
-
-### `.github/workflows/ci.yml`
-Primary quality workflow for pushes to `main` and pull requests. It runs frontend typecheck/lint/text-hygiene/tests/build, Rust core formatting/Clippy/tests, Tauri `cargo check` on Linux/Windows/macOS, and `cargo-deny` dependency policy.
-
-### `.github/workflows/codeql.yml`
-CodeQL security analysis for JavaScript/TypeScript and Rust on pushes, pull requests, and a weekly schedule. The Rust job installs Linux Tauri prerequisites before autobuild analysis.
-
-### `.github/workflows/release.yml`
-Tag-triggered cross-platform Tauri packaging workflow. It builds draft release artifacts for Linux, Windows, and universal macOS and does not claim signing unless protected signing configuration is supplied separately.
-
-### `.github/workflows/rust.yml`
-Focused Rust-core verification workflow. It formats the workspace and builds/lints/tests only `keysmith-core`, avoiding an unnecessary full Linux Tauri build in a job that does not install desktop webview system packages.
-
-## `crates/keysmith-core` — framework-independent security core
-
-### `crates/keysmith-core/Cargo.toml`
-Core crate manifest. It declares the security-focused package description and dependencies on `getrandom`, `eff_wordlist`, `zxcvbn`, `serde`, and `thiserror`, plus test-only `proptest`.
-
-### `crates/keysmith-core/src/lib.rs`
-Public crate surface. It keeps implementation modules private and re-exports the supported error type, generation functions, options, presets, passphrase entropy estimator, and strength estimator/result type.
-
-### `crates/keysmith-core/src/error.rs`
-Central typed `KeySmithError` definitions for invalid password length, unusable character policy, required-set length constraints, batch limits, passphrase word/separator validation, and OS random-source failure. Error messages contain no generated secret.
-
-### `crates/keysmith-core/src/random.rs`
-Private cryptographic selection primitives. `uniform_index` uses OS random `u64` values plus rejection sampling to avoid modulo bias, and `secure_shuffle` implements a Fisher–Yates-style shuffle using the same unbiased selector.
-
-### `crates/keysmith-core/src/policy.rs`
-Serializable/deserializable `PasswordOptions` and `PassphraseOptions` structures and their privacy/security-oriented defaults. Serde camelCase naming forms the Rust/TypeScript IPC data contract.
-
-### `crates/keysmith-core/src/generator.rs`
-Password and batch-generation implementation. It validates length/count, builds enabled character pools, applies custom symbols and ambiguity filtering, ensures every enabled class is represented, fills remaining positions from the combined pool, and securely shuffles output.
-
-### `crates/keysmith-core/src/passphrase.rs`
-EFF large Diceware passphrase implementation. It validates word count/separator, selects words independently with the unbiased random helper, applies optional capitalization/two-digit suffix, and computes selection-space entropy.
-
-### `crates/keysmith-core/src/presets.rs`
-Static Rust-owned policy presets: Balanced, Maximum, Legacy compatible, and Alphanumeric. Presets are serialized to the frontend but intentionally not deserialized from it.
-
-### `crates/keysmith-core/src/strength.rs`
-Adapter around `zxcvbn`. It converts the library estimate into the stable `StrengthEstimate` structure and KeySmith's Very weak → Very strong labels.
-
-### `crates/keysmith-core/tests/security.rs`
-Deterministic/security behavior tests for enabled character-class representation, ambiguity exclusion, batch-size enforcement, and requested passphrase word count. Security-relevant edge cases should continue to be added here.
-
-### `crates/keysmith-core/tests/properties.rs`
-Property tests using `proptest`, currently checking exact generated lengths across the supported range and digits-only output invariants.
-
-## `src-tauri` — desktop privilege adapter
-
-### `src-tauri/Cargo.toml`
-Tauri desktop crate manifest. It depends on `keysmith-core`, Tauri, `arboard` for clipboard integration, `zeroize` for best-effort secret-buffer clearing, Serde, and `tauri-build`.
-
-### `src-tauri/build.rs`
-Minimal Tauri build-script entry point. It delegates generated desktop build configuration to `tauri_build::build()`.
-
-### `src-tauri/src/main.rs`
-Native executable entry point. It invokes `keysmith_lib::run()` and suppresses the extra Windows console window for non-debug builds.
-
-### `src-tauri/src/lib.rs`
-Tauri bootstrap and explicit command registration. The frontend can invoke only the six registered generation/preset/clipboard commands, subject to capability permissions.
-
-### `src-tauri/src/commands.rs`
-Privileged command implementation. It adapts core generation/strength results for IPC and owns all clipboard writes, the 4096-character clipboard-input guard, conditional delayed clearing, clear-now behavior, and best-effort zeroization of mutable Rust secret buffers.
-
-### `src-tauri/tauri.conf.json`
-Product/version/application identifier, Vite build integration, main-window geometry, restrictive CSP, `freezePrototype`, bundle metadata, platform targets, and native icon configuration.
-
-### `src-tauri/capabilities/default.json`
-Least-privilege Tauri capability for the `main` window. It grants only default core behavior plus the two custom KeySmith permission groups.
-
-### `src-tauri/permissions/keysmith.toml`
-Custom command allowlists split into generation/preset and clipboard permission groups. New privileged commands must be explicitly reviewed and added here rather than relying only on command registration.
-
-### `src-tauri/icons/32x32.png`
-Small PNG native application icon used by supported package/window contexts.
-
-### `src-tauri/icons/128x128.png`
-Standard 128×128 PNG application icon.
-
-### `src-tauri/icons/128x128@2x.png`
-High-density PNG icon for 2× display contexts.
-
-### `src-tauri/icons/icon.ico`
-Windows multi-image icon container used by Windows packaging/application metadata.
-
-### `src-tauri/icons/icon.icns`
-Apple icon container used by macOS packaging/application metadata.
-
-The icon files are binary assets. Their role is packaging/branding only; they must not contain executable logic or secret data.
-
-## `src` — TypeScript frontend
-
-### `src/main.ts`
-Main application controller. It binds required DOM elements, maintains transient generator state, collects options, invokes the typed API wrapper, renders output/strength/status, handles batch export, clipboard actions, presets, tabs, themes, dialogs, onboarding, and initialization.
-
-### `src/api.ts`
-Single typed frontend gateway to `window.__TAURI__.core.invoke`. It maps application methods to the six Rust command names and explicitly errors when the desktop bridge is unavailable.
-
-### `src/types.ts`
-Frontend interfaces for Rust IPC inputs/outputs and application-specific mode/theme unions. It must remain synchronized with Serde data shapes.
-
-### `src/storage.ts`
-Only intentional local-storage access layer. It persists the clipboard-clear duration, theme preference, and onboarding-complete flag with defensive reads/writes and safe fallbacks. Generated secrets must never be added here.
-
-### `src/storage.test.ts`
-Vitest/jsdom tests for local preference defaults, supported/fallback clipboard durations, theme persistence, and the onboarding flag's non-secret storage behavior.
-
-### `src/styles.css`
-Complete application stylesheet: design tokens, light/dark themes, layout, cards, controls, buttons, output states, dialogs, responsive behavior, focus treatment, status presentation, and reduced-motion rules.
-
-### `src/tauri.d.ts`
-Type declaration for the global Tauri object exposed because `withGlobalTauri` is enabled in desktop configuration.
-
-### `src/i18n/en.ts`
-Initial English status-string module. It is a localization seed rather than a complete runtime locale-switching framework.
-
-### `src/assets/logo.svg`
-Editable vector KeySmith logo displayed in the UI, favicon, onboarding, About dialog, and README. Native package icons are separate generated/maintained assets under `src-tauri/icons`.
-
-## `scripts`
-
-### `scripts/check-format.mjs`
-Deterministic repository text-hygiene checker. It walks recognized text files while ignoring generated/dependency directories and rejects CR/CRLF line endings, missing final newlines, and trailing whitespace.
-
-This script is intentionally separate from Rust formatting and TypeScript lint/type checks. CI runs it through `npm run format:check`.
-
-## `docs` — maintained documentation set
-
-### `docs/README.md`
-Documentation portal and documentation-maintenance rules. It groups product, architecture, development, security, and operations references and names security-sensitive documents that require coordinated review.
-
-### `docs/user-guide.md`
-Complete end-user behavior guide for onboarding, generator modes, policy options, presets, passphrases, entropy, batch export, strength, clipboard behavior, settings, privacy, accessibility, updates, and safe use.
-
-### `docs/architecture.md`
-High-level architecture and trust-boundary overview connecting the Rust core, Tauri adapter, frontend, preferences, and explicit export/clipboard side effects.
-
-### `docs/core-api.md`
-Detailed Rust core API and algorithm reference, including options, validation, character sources, random selection, passphrase entropy, strength estimation, presets, errors, tests, and dependencies.
-
-### `docs/desktop-bridge.md`
-Detailed Tauri adapter reference covering commands, IPC result shapes, clipboard lifecycle, capability/permission model, CSP, window/build/bundle configuration, dependencies, and security-review checks.
-
-### `docs/frontend.md`
-Detailed frontend reference covering startup, transient state, DOM contract, Rust/TypeScript types, API mapping, generation/clipboard/export/theme/storage flows, presets, tabs/dialogs, accessibility, styling, localization seed, and tests.
-
-### `docs/setup.md`
-Development prerequisites and initial setup information for supported operating systems and Tauri development.
-
-### `docs/development.md`
-Contributor development workflow, code-ownership boundaries, quality commands, and security-sensitive change guidance.
-
-### `docs/testing.md`
-Automated and manual testing expectations spanning TypeScript, Rust core, desktop platform checks, security properties, and release-candidate verification.
-
-### `docs/release.md`
-Version/tag/release process, platform packaging expectations, artifact verification, and signing caveats.
-
-### `docs/troubleshooting.md`
-Troubleshooting guidance for setup, frontend, Rust, Tauri, clipboard, Linux dependencies, and release/build failures.
-
-### `docs/accessibility.md`
-Accessibility commitments and manual review checklist for keyboard operation, focus, semantics, status announcements, reduced motion, scalable text/layout, and non-color cues.
-
-### `docs/performance.md`
-Performance objectives and measurement guidance for generation, UI responsiveness, batch workloads, and release builds.
-
-### `docs/github.md`
-GitHub governance guidance, including recommended branch protection, required checks after check names are proven, issue/PR/release automation, and repository security settings.
-
-### `docs/wordlists.md`
-Passphrase word-list provenance and selection-model documentation for the EFF large Diceware list supplied by `eff_wordlist`.
-
-### `docs/maintainer-guide.md`
-Maintainer operations handbook covering change classification, commit conventions, CI ownership, dependency updates, version synchronization, documentation/security gates, PR verification, release-candidate checks, and handoff discipline.
-
-### `docs/repository-reference.md`
-This file. It is the canonical completeness inventory and must remain synchronized whenever repository files are added, removed, renamed, or substantially repurposed.
-
-### `docs/adr/0001-rust-core-tauri-ui.md`
-Architecture Decision Record documenting the separation of a framework-independent Rust security core from the Tauri/TypeScript desktop UI.
-
-### `docs/adr/0002-os-csprng-and-no-secret-storage.md`
-Architecture Decision Record documenting the choice of operating-system cryptographic randomness and the policy against intentional generated-secret storage/history.
+This is the canonical file-by-file inventory for KeySmith. Every Git-tracked project file is listed here so repository review, maintenance, onboarding, security auditing, and documentation-completeness checks are deterministic.
+
+The automated `scripts/check-doc-inventory.mjs` check uses `git ls-files` and verifies that every tracked path appears in this document. CI runs it through `npm run docs:check`. When a tracked file is added, removed, renamed, or repurposed, update this reference in the same pull request.
+
+Directories themselves are not Git-tracked files; their responsibilities are represented by the files they contain.
+
+## Root configuration and project metadata
+
+- `.editorconfig` — cross-editor charset, indentation, whitespace, and newline conventions.
+- `.env.example` — safe environment-file example containing no credential; real local environment files remain ignored.
+- `.gitattributes` — Git text/line-ending normalization rules used with repository hygiene tooling.
+- `.gitignore` — excludes dependencies, build outputs, local environment files, editor artifacts, and other non-source state.
+- `Cargo.toml` — Rust workspace manifest for `keysmith-core` and `src-tauri`; centralizes version, Rust 2024 edition, Apache-2.0 metadata, maintainer identity, and strict Rust/Clippy lint policy.
+- `package.json` — frontend/tooling manifest and npm command surface, including development, typecheck, lint, text hygiene, documentation-inventory validation, tests, builds, and Tauri CLI access.
+- `tsconfig.json` — strict no-emit TypeScript configuration with `noUncheckedIndexedAccess` and bundler-style resolution.
+- `vite.config.ts` — Vite/Tauri frontend development and build configuration; fixes port 1420 and limits environment-variable prefixes.
+- `eslint.config.js` — type-aware ESLint configuration for frontend TypeScript/Vite code, including the no-floating-promises rule.
+- `rustfmt.toml` — repository Rust formatting configuration.
+- `deny.toml` — cargo-deny advisory/license/source/version policy.
+- `index.html` — complete semantic desktop UI shell: generator modes, controls, status/output, onboarding, Settings, About, privacy text, contact links, and visible version/credit.
+
+## Root documentation, policy, and governance
+
+- `README.md` — public project landing page, quick start, features, architecture, security/privacy summary, complete documentation map, development/release commands, and support information.
+- `CHANGELOG.md` — durable user-visible change history and release-candidate entries.
+- `ROADMAP.md` — forward-looking engineering/product milestones; roadmap entries are intentions rather than implemented guarantees.
+- `CONTRIBUTING.md` — contributor workflow and quality/security expectations.
+- `CODE_OF_CONDUCT.md` — community conduct expectations.
+- `SECURITY.md` — vulnerability reporting policy and responsible disclosure guidance.
+- `PRIVACY.md` — runtime privacy commitments and non-secret preference model.
+- `THREAT_MODEL.md` — assets, attackers, trust boundaries, mitigations, and residual security risks.
+- `SUPPORT.md` — project support channels and safe-help guidance.
+- `LICENSE` — Apache License 2.0 text governing KeySmith source/distribution.
+- `NOTICE` — project notice/attribution information accompanying Apache-2.0 distribution.
+- `what_changed.md` — canonical continuation, verification, limitation, migration, release-note, and exact-next-task ledger.
+
+## GitHub configuration and automation
+
+- `.github/FUNDING.yml` — repository funding link configuration.
+- `.github/dependabot.yml` — automated Cargo, npm, and GitHub Actions dependency-update configuration.
+- `.github/pull_request_template.md` — pull-request quality/security/documentation checklist.
+- `.github/RELEASE_TEMPLATE.md` — consistent release-notes and verification template for maintainers.
+- `.github/ISSUE_TEMPLATE/bug_report.yml` — structured public bug-report form with safe reproduction fields.
+- `.github/ISSUE_TEMPLATE/feature_request.yml` — structured feature-proposal form.
+- `.github/ISSUE_TEMPLATE/config.yml` — issue-template routing/contact links for support and sensitive reporting paths.
+- `.github/workflows/ci.yml` — primary PR/main quality workflow: frontend checks including documentation inventory, Rust core quality, three-platform Tauri checks, and cargo-deny policy.
+- `.github/workflows/codeql.yml` — JavaScript/TypeScript and Rust CodeQL analysis on PRs/main and a weekly schedule.
+- `.github/workflows/release.yml` — `v*` tag-triggered draft release builds for Linux, Windows, and universal macOS.
+- `.github/workflows/rust.yml` — focused `keysmith-core` format/Clippy/build/test workflow; deliberately avoids a redundant full Linux Tauri build without native desktop packages.
+
+## Rust core: `crates/keysmith-core`
+
+- `crates/keysmith-core/Cargo.toml` — framework-independent core crate metadata/dependencies: `getrandom`, `eff_wordlist`, `zxcvbn`, Serde, thiserror, and test-only proptest.
+- `crates/keysmith-core/src/lib.rs` — public API surface re-exporting supported options, generators, presets, strength estimates, entropy helper, and typed errors.
+- `crates/keysmith-core/src/error.rs` — centralized `KeySmithError` validation/random-source errors; error messages do not include generated secrets.
+- `crates/keysmith-core/src/random.rs` — private OS-CSPRNG bounded selection using rejection sampling plus secure Fisher–Yates-style shuffle.
+- `crates/keysmith-core/src/policy.rs` — Serde camelCase `PasswordOptions`/`PassphraseOptions` structures and safe defaults.
+- `crates/keysmith-core/src/generator.rs` — password and batch validation/generation, character pools, custom-symbol behavior, ambiguity filtering, required-class guarantee, random filling, and final shuffle.
+- `crates/keysmith-core/src/passphrase.rs` — EFF large Diceware selection, word/separator validation, capitalization/two-digit suffix, and selection-space entropy calculation.
+- `crates/keysmith-core/src/presets.rs` — Rust-owned Balanced, Maximum, Legacy compatible, and Alphanumeric policy definitions serialized to the UI.
+- `crates/keysmith-core/src/strength.rs` — zxcvbn adapter returning score, guess estimates, logarithmic estimate, and human-readable strength label.
+- `crates/keysmith-core/tests/security.rs` — explicit security/validation regressions: required classes, ambiguity exclusion, empty policy, ambiguity-filtered custom symbols, batch bounds, passphrase word count/bounds, and separator validation.
+- `crates/keysmith-core/tests/properties.rs` — proptest coverage for exact requested length and digits-only generation invariants across ranges.
+
+## Tauri desktop adapter: `src-tauri`
+
+- `src-tauri/Cargo.toml` — desktop crate manifest using Tauri, `keysmith-core`, arboard, zeroize, Serde, and tauri-build.
+- `src-tauri/build.rs` — minimal Tauri build-script entry point calling `tauri_build::build()`.
+- `src-tauri/src/main.rs` — native executable entry point; suppresses the extra release-console window on Windows and calls the library runner.
+- `src-tauri/src/lib.rs` — Tauri builder/bootstrap and explicit registration of the six allowed application commands.
+- `src-tauri/src/commands.rs` — generation/preset IPC adapters plus privileged clipboard copy, conditional delayed clear, clear-now, size guard, and best-effort Rust-buffer zeroization.
+- `src-tauri/tauri.conf.json` — product/version/identifier, Vite integration, window geometry, CSP, `freezePrototype`, bundle metadata, targets, and icon configuration.
+- `src-tauri/capabilities/default.json` — least-privilege capability assigning default core plus KeySmith generation/clipboard permissions to the `main` window.
+- `src-tauri/permissions/keysmith.toml` — explicit custom command allowlists split into generation/preset and clipboard privileges.
+- `src-tauri/icons/32x32.png` — small PNG native application icon.
+- `src-tauri/icons/128x128.png` — standard 128×128 PNG native application icon.
+- `src-tauri/icons/128x128@2x.png` — high-density PNG native application icon.
+- `src-tauri/icons/icon.ico` — Windows icon container used by native packaging/application metadata.
+- `src-tauri/icons/icon.icns` — macOS icon container used by native packaging/application metadata.
+
+The native icon files are binary branding/package assets only; they contain no executable logic or secret data.
+
+## TypeScript frontend: `src`
+
+- `src/main.ts` — application controller for DOM bindings, transient state, generation, rendering, clipboard actions, batch export, presets, tabs, theme, dialogs, onboarding, and startup.
+- `src/api.ts` — single typed gateway to Tauri `invoke`; maps the six frontend methods to Rust command names and rejects when the desktop bridge is unavailable.
+- `src/types.ts` — TypeScript mirror of Rust IPC inputs/results plus generator-mode/theme unions.
+- `src/storage.ts` — only intentional local-storage layer; persists clipboard delay, theme, and onboarding completion with defensive safe fallbacks, never generated credentials.
+- `src/storage.test.ts` — Vitest/jsdom tests for preference defaults, validation/fallback, theme persistence, and onboarding state.
+- `src/styles.css` — complete design tokens, light/dark themes, layout, controls, output states, dialogs, responsive/focus/reduced-motion styling.
+- `src/tauri.d.ts` — type declaration for the global Tauri bridge exposed by desktop configuration.
+- `src/i18n/en.ts` — initial English status-message localization seed.
+- `src/assets/logo.svg` — editable vector KeySmith logo used by the frontend/README; native package icons live separately in `src-tauri/icons`.
+
+## Repository scripts
+
+- `scripts/check-format.mjs` — recursively validates LF-only line endings, final newlines, and absence of trailing whitespace for recognized repository text files.
+- `scripts/check-doc-inventory.mjs` — obtains every tracked path from `git ls-files` and fails when a path is not named in this canonical reference; used by `npm run docs:check` and CI.
+
+## Maintained documentation: `docs`
+
+- `docs/README.md` — documentation portal, navigation map, synchronization rules, and security-sensitive documentation-review list.
+- `docs/user-guide.md` — end-user behavior/safe-use guide for onboarding, password/passphrase/batch modes, strength, clipboard, export, settings, themes, privacy, and scope.
+- `docs/architecture.md` — layered architecture, trust boundaries, persistence/network/failure models, data flows, and architecture-change checklist.
+- `docs/core-api.md` — detailed Rust core API, validation, random-selection, passphrase entropy, strength, presets, errors, tests, and dependency responsibilities.
+- `docs/desktop-bridge.md` — Tauri command surface, result contracts, clipboard lifecycle, capability/permission model, CSP, bundle/window configuration, and privilege review checklist.
+- `docs/frontend.md` — startup/state/DOM/type/API/storage/export/theme/tab/dialog/accessibility/style/test architecture for the presentation layer.
+- `docs/setup.md` — common plus Windows/macOS/Linux source-development prerequisites, install/run/build checks, environment-secret rules, and setup isolation sequence.
+- `docs/development.md` — day-to-day layer ownership, development modes, quality commands, secure change procedures, dependency/documentation rules, and debugging guidance.
+- `docs/testing.md` — Rust/frontend/static/desktop/dependency/CodeQL checks plus packaged smoke, clipboard, accessibility, and release-evidence requirements.
+- `docs/release.md` — synchronized versioning, clean candidate gates, lockfiles, native packaging, signing/notarization, smoke tests, screenshots, tagging, publication, rollback, and secret-handling process.
+- `docs/troubleshooting.md` — layer-by-layer diagnosis for frontend/Rust/Tauri/native dependencies, clipboard, policies, presets, storage, export, CI/CodeQL/cargo-deny, packaging, and safe bug reports.
+- `docs/accessibility.md` — implemented keyboard/semantic/live-region/focus/responsive/reduced-motion baseline plus detailed manual release checklist and reporting rules.
+- `docs/performance.md` — security-preserving budgets, measurement separation, batch/clipboard/export/startup performance, benchmarking guidance, and regression triage.
+- `docs/github.md` — branch protection, PR/merge policy, expected checks, issues/discussions/labels/milestones, Dependabot/CodeQL/settings, Actions permissions, releases, and emergency governance.
+- `docs/wordlists.md` — EFF large Diceware source, local independent selection model, repeated-word behavior, entropy formula, and third-party attribution context.
+- `docs/maintainer-guide.md` — change classification, commit conventions, verification ladder, workflow ownership, dependency/version/documentation/security gates, PR/release and handoff discipline.
+- `docs/repository-reference.md` — this file and CI-backed canonical completeness inventory.
+- `docs/adr/0001-rust-core-tauri-ui.md` — decision record establishing a framework-independent Rust security core behind a Tauri/TypeScript UI.
+- `docs/adr/0002-os-csprng-and-no-secret-storage.md` — decision record establishing OS cryptographic randomness and no intentional generated-secret history/storage.
 
 ## Files intentionally not committed at this checkpoint
 
-The following common development outputs are not project source files and therefore are not entries in the committed-file inventory:
+The following are generated/local state rather than project source and are intentionally absent from this tracked-file inventory:
 
-- `node_modules/`
-- `dist/`
-- Rust/Tauri `target/` directories
-- local `.env` files
-- editor/OS temporary files
-- local release artifacts
+- `node_modules/`;
+- `dist/`;
+- Rust/Tauri `target/` directories;
+- local `.env` files;
+- editor/OS temporary files;
+- local release artifacts.
 
-At this checkpoint, `package-lock.json` and `Cargo.lock` are also not committed. The release-candidate ledger in `what_changed.md` tracks lockfile generation/verification as an explicit next-stage task; do not invent or hand-author dependency lockfiles.
+At this release-candidate checkpoint, `package-lock.json` and `Cargo.lock` are also not committed. `what_changed.md` tracks trusted clean dependency resolution/lockfile generation as a pre-stable-release task. Do not hand-author dependency lockfiles.
 
 ## Completeness maintenance procedure
 
-For every pull request that adds, deletes, renames, or repurposes a committed file:
+For every pull request that changes the tracked-file set:
 
-1. compare the pull-request file list with this inventory;
-2. add/remove/rename the corresponding entry;
+1. run `npm run docs:check`;
+2. add/remove/rename the corresponding entry here;
 3. update the deeper topic document when behavior/security/operations changed;
-4. update `docs/README.md` when a navigable documentation artifact is added or removed;
-5. update `what_changed.md` when the change affects the active release-candidate checkpoint;
-6. ensure the text-hygiene, frontend, Rust, desktop, security, and release workflows still cover the resulting structure appropriately.
+4. update `docs/README.md` when navigable documentation changes;
+5. update `what_changed.md` when the active release-candidate checkpoint changes;
+6. keep CI/tooling coverage synchronized with new scripts/configuration.
 
-A repository documentation review is not complete until this inventory and the actual Git tree agree.
+A repository documentation review is complete only when `npm run docs:check` passes and the descriptions above still match the actual responsibilities of their files.
