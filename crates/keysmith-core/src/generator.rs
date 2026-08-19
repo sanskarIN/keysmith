@@ -10,10 +10,16 @@ const MAX_LENGTH: usize = 128;
 const MAX_CUSTOM_SYMBOLS: usize = 40;
 
 fn filtered_chars(source: &str, exclude_ambiguous: bool) -> Vec<char> {
-    source
+    let mut filtered = Vec::new();
+    for character in source
         .chars()
         .filter(|character| !exclude_ambiguous || !AMBIGUOUS.contains(*character))
-        .collect()
+    {
+        if !filtered.contains(&character) {
+            filtered.push(character);
+        }
+    }
+    filtered
 }
 
 fn validate_custom_symbols(symbols: &str) -> Result<(), KeySmithError> {
@@ -109,4 +115,19 @@ pub fn generate_batch(
         return Err(KeySmithError::InvalidBatchSize);
     }
     (0..count).map(|_| generate_password(options)).collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::filtered_chars;
+
+    #[test]
+    fn candidate_filter_treats_repeated_symbols_as_one_choice() {
+        assert_eq!(filtered_chars("!!@@##", false), vec!['!', '@', '#']);
+    }
+
+    #[test]
+    fn candidate_filter_deduplicates_after_ambiguity_removal() {
+        assert_eq!(filtered_chars("||!!@@", true), vec!['!', '@']);
+    }
 }
