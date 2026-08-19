@@ -1,7 +1,15 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { api } from "./api";
 import type { PasswordOptions } from "./types";
+
+const tauri = vi.hoisted(() => ({
+  invoke: vi.fn(),
+  isTauri: vi.fn(() => true),
+}));
+
+vi.mock("@tauri-apps/api/core", () => tauri);
+
+import { api } from "./api";
 
 const options: PasswordOptions = {
   length: 20,
@@ -14,55 +22,51 @@ const options: PasswordOptions = {
 };
 
 describe("Tauri IPC client", () => {
-  const invoke = vi.fn();
-
   beforeEach(() => {
-    invoke.mockReset();
-    Object.defineProperty(window, "__TAURI__", {
-      configurable: true,
-      writable: true,
-      value: { core: { invoke } },
-    });
+    tauri.invoke.mockReset();
+    tauri.isTauri.mockReset();
+    tauri.isTauri.mockReturnValue(true);
   });
 
   it("sends password options only to the password command", async () => {
-    invoke.mockResolvedValue({
+    tauri.invoke.mockResolvedValue({
       secret: "example",
       strength: { score: 4, guesses: 1, guessesLog10: 0, label: "Very strong" },
     });
 
     await api.generatePassword(options);
 
-    expect(invoke).toHaveBeenCalledOnce();
-    expect(invoke).toHaveBeenCalledWith("generate_password_command", { options });
+    expect(tauri.invoke).toHaveBeenCalledOnce();
+    expect(tauri.invoke).toHaveBeenCalledWith("generate_password_command", { options });
   });
 
   it("passes the requested batch count and accepts lightweight secret-only results", async () => {
-    invoke.mockResolvedValue([{ secret: "fictional-batch-value" }]);
+    tauri.invoke.mockResolvedValue([{ secret: "fictional-batch-value" }]);
 
     const result = await api.generateBatch(options, 12);
 
-    expect(invoke).toHaveBeenCalledWith("generate_batch_command", { options, count: 12 });
+    expect(tauri.invoke).toHaveBeenCalledWith("generate_batch_command", { options, count: 12 });
     expect(result).toEqual([{ secret: "fictional-batch-value" }]);
     expect(result.at(0)).not.toHaveProperty("strength");
   });
 
   it("passes clipboard expiry through the narrow clipboard command", async () => {
-    invoke.mockResolvedValue(undefined);
+    tauri.invoke.mockResolvedValue(undefined);
 
     await api.copySecret("fictional-test-secret", 30);
 
-    expect(invoke).toHaveBeenCalledWith("copy_secret_command", {
+    expect(tauri.invoke).toHaveBeenCalledWith("copy_secret_command", {
       secret: "fictional-test-secret",
       clearAfterSeconds: 30,
     });
   });
 
-  it("fails closed when the desktop bridge is unavailable", async () => {
-    Reflect.deleteProperty(window, "__TAURI__");
+  it("fails closed when the desktop runtime is unavailable", async () => {
+    tauri.isTauri.mockReturnValue(false);
 
     await expect(api.generatePassword(options)).rejects.toThrow(
       "KeySmith desktop bridge is unavailable",
     );
+    expect(tauri.invoke).not.toHaveBeenCalled();
   });
 });
