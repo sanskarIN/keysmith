@@ -1,0 +1,14 @@
+[[permission]]
+identifier = "keysmith-generation"
+description = "Allows local password/passphrase generation and preset lookup."
+commands.allow = [
+  "generate_password_command",
+  "generate_batch_command",
+  "generate_passphrase_command",
+  "get_presets_command"
+]
+
+[[permission]]
+identifier = "keysmith-clipboard"
+description = "Allows explicit clipboard copy and clear actions."
+commands.allow = ["copy_secret_command", "clear_clipboard_command"]
