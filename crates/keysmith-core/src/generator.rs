@@ -1,4 +1,5 @@
 use crate::{KeySmithError, PasswordOptions, random};
+use zeroize::Zeroize;
 
 const LOWERCASE: &str = "abcdefghijklmnopqrstuvwxyz";
 const UPPERCASE: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -104,7 +105,9 @@ pub fn generate_password(options: &PasswordOptions) -> Result<String, KeySmithEr
     }
 
     random::secure_shuffle(&mut password)?;
-    Ok(password.into_iter().collect())
+    let secret: String = password.iter().collect();
+    password.zeroize();
+    Ok(secret)
 }
 
 pub fn generate_batch(
