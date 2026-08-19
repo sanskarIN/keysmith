@@ -25,9 +25,10 @@ This model covers local password/passphrase generation, Tauri IPC, clipboard use
 | --- | --- | --- |
 | Predictable passwords | OS CSPRNG plus rejection sampling; required-class inclusion; security tests | Compromised OS RNG is out of scope |
 | Modulo bias | Rejection sampling over the full `u64` range | Negligible when implementation is correct |
-| Weak policy configuration | Validation, presets, zxcvbn feedback | Users can intentionally choose weak settings |
-| Secret leakage in logs | No password logging or analytics; review policy | External debuggers/process inspection are out of scope |
-| Clipboard exposure | Explicit copy, optional conditional auto-clear | Other apps/clipboard managers may read clipboard before clear |
+| Weak policy configuration | Core validation, presets, zxcvbn feedback | Users can intentionally choose weak settings |
+| Malformed/oversized IPC generation input | Rust core enforces password length, batch count, passphrase word count, separator rules, and custom-symbol limits instead of trusting HTML constraints | A future command could introduce a new validation gap if added without review |
+| Secret leakage in logs | No password logging or analytics; structured diagnostic redaction for sensitive field names | External debuggers/process inspection are out of scope |
+| Clipboard exposure | Explicit copy, optional conditional auto-clear, bounded clipboard payload | Other apps/clipboard managers may read clipboard before clear |
 | Clipboard data destruction | Clear only when clipboard still equals copied secret | Race conditions outside app control remain possible |
 | XSS/webview compromise | No remote content, restrictive CSP, local assets | Tauri/webview vulnerabilities remain dependency risk |
 | Overprivileged IPC | Small command surface and capability permissions | Future commands require review |
@@ -37,9 +38,11 @@ This model covers local password/passphrase generation, Tauri IPC, clipboard use
 ## Abuse cases
 
 - Generating huge batches to exhaust memory: capped at 500.
-- Oversized clipboard inputs: command rejects values over 4096 characters.
+- Oversized clipboard inputs: command rejects values over 65,536 characters, which still permits the largest supported 500 × 128-character batch plus separators.
+- Oversized or invisible custom-symbol sets: rejected by the Rust core; custom symbols are capped at 40 visible non-whitespace characters.
 - Invalid passphrase separator/control characters: rejected by core validation.
 - Empty character classes after ambiguity filtering: rejected.
+- Unsupported persisted clipboard-clear values: normalized to the privacy-oriented 30-second default.
 
 ## Accepted residual risks
 
