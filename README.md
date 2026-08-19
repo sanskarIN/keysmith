@@ -23,6 +23,7 @@ KeySmith is a desktop utility for Windows, macOS, and Linux. Passwords and passp
 - Clipboard auto-clear that clears only if the clipboard still contains the copied secret.
 - Light, dark, and system themes with keyboard-first accessibility.
 - Offline-by-design architecture with restrictive Tauri CSP and least-privilege capabilities.
+- Tracked npm and Cargo lockfiles with locked CI/release dependency resolution.
 - Security, privacy, threat-model, testing, accessibility, release, verification, and file-by-file repository documentation.
 
 ## Screenshots
@@ -54,7 +55,8 @@ Prerequisites: current stable Rust, Node.js 22+ recommended, npm, and the platfo
 ```bash
 git clone https://github.com/sanskarIN/keysmith.git
 cd keysmith
-npm install
+npm ci
+cargo metadata --locked --format-version 1 --no-deps > /dev/null
 npm run tauri dev
 ```
 
@@ -72,12 +74,12 @@ npm run build
 
 # Rust core checks
 cargo fmt --all -- --check
-cargo clippy -p keysmith-core --all-targets --all-features -- -D warnings
-cargo test -p keysmith-core --all-features
+cargo clippy --locked -p keysmith-core --all-targets --all-features -- -D warnings
+cargo test --locked -p keysmith-core --all-features
 
-# Desktop adapter / Tauri check
-cargo check -p keysmith --all-targets
-cargo test -p keysmith --lib
+# Desktop adapter / Tauri checks
+cargo check --locked -p keysmith --all-targets
+cargo test --locked -p keysmith --lib
 ```
 
 See [`docs/development.md`](docs/development.md), [`docs/testing.md`](docs/testing.md), and the release-candidate gates in [`docs/verification.md`](docs/verification.md).
@@ -85,7 +87,8 @@ See [`docs/development.md`](docs/development.md), [`docs/testing.md`](docs/testi
 ## Build and release
 
 ```bash
-npm install
+npm ci
+cargo metadata --locked --format-version 1 --no-deps > /dev/null
 npm run tauri build
 ```
 
