@@ -58,6 +58,9 @@ jobs:
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
       - run: npm install
       - run: cargo check -p keysmith --all-targets
+      - name: Run desktop adapter unit tests
+        if: matrix.os == 'ubuntu-22.04'
+        run: cargo test -p keysmith --lib
 
   dependency-policy:
     name: Rust dependency policy
