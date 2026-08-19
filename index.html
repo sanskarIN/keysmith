@@ -19,6 +19,7 @@
         <div class="top-actions">
           <span class="privacy-pill" title="No network access or telemetry">Offline • Private</span>
           <button class="icon-button" id="theme-button" type="button" aria-label="Change theme">◐</button>
+          <button class="secondary-button" id="settings-button" type="button">Settings</button>
           <button class="secondary-button" id="about-button" type="button">About</button>
         </div>
       </header>
@@ -136,6 +137,56 @@
         <span>Made by the Sanskar</span>
         <span>Apache-2.0 • KeySmith v0.1.0</span>
       </footer>
+
+      <dialog id="onboarding-dialog" aria-labelledby="onboarding-title">
+        <form method="dialog" class="dialog-card onboarding-card">
+          <img src="/src/assets/logo.svg" alt="" width="72" height="72" />
+          <p class="eyebrow">WELCOME TO KEYSMITH</p>
+          <h2 id="onboarding-title">Strong credentials. No cloud required.</h2>
+          <div class="onboarding-grid">
+            <article><strong>Local generation</strong><span>Cryptographic randomness comes from the operating system.</span></article>
+            <article><strong>No secret history</strong><span>Generated passwords and passphrases are not intentionally persisted.</span></article>
+            <article><strong>Safer clipboard</strong><span>Optional auto-clear only removes the value if it is still unchanged.</span></article>
+          </div>
+          <p class="hint">You can revisit this introduction from Settings at any time.</p>
+          <button id="finish-onboarding-button" class="primary-button full" value="close" type="submit">Start generating</button>
+        </form>
+      </dialog>
+
+      <dialog id="settings-dialog" aria-labelledby="settings-dialog-title">
+        <form method="dialog" class="dialog-card settings-dialog-card">
+          <button class="dialog-close" value="close" aria-label="Close Settings dialog">×</button>
+          <h2 id="settings-dialog-title">Settings</h2>
+          <section class="settings-section" aria-labelledby="appearance-title">
+            <h3 id="appearance-title">Appearance</h3>
+            <label class="setting-row" for="settings-theme">
+              <span><strong>Theme</strong><small>Follow the system or choose a fixed appearance.</small></span>
+              <select id="settings-theme">
+                <option value="system">System</option>
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+              </select>
+            </label>
+          </section>
+          <section class="settings-section" aria-labelledby="privacy-title">
+            <h3 id="privacy-title">Privacy & data</h3>
+            <p>No account, telemetry, cloud sync, or password history is used. Only non-secret preferences are stored locally.</p>
+            <button id="settings-clear-clipboard" class="secondary-button" type="button">Clear clipboard now</button>
+          </section>
+          <section class="settings-section" aria-labelledby="accessibility-title">
+            <h3 id="accessibility-title">Accessibility</h3>
+            <p>Keyboard navigation, visible focus, scalable text, reduced-motion support, semantic labels, and non-color status cues are built in.</p>
+          </section>
+          <section class="settings-section" aria-labelledby="updates-title">
+            <h3 id="updates-title">Updates</h3>
+            <p>Version 0.1.0. Release builds are published through the project's GitHub release process; KeySmith performs no silent background network checks.</p>
+          </section>
+          <section class="settings-section" aria-labelledby="help-title">
+            <h3 id="help-title">Help & onboarding</h3>
+            <button id="show-onboarding-button" class="secondary-button" type="button">Show introduction</button>
+          </section>
+        </form>
+      </dialog>
 
       <dialog id="about-dialog" aria-labelledby="about-title">
         <form method="dialog" class="dialog-card">
