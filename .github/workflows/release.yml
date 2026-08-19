@@ -9,7 +9,36 @@ permissions:
   contents: write
 
 jobs:
+  verify-tag:
+    name: Verify release tag
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - name: Resolve frontend dependencies
+        run: npm install
+      - name: Require tag to match package version
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: node -e "const p = require('./package.json'); if (process.env.RELEASE_TAG !== 'v' + p.version) { console.error('Tag must equal v' + p.version); process.exit(1); }"
+      - run: npm audit --audit-level=high
+      - run: npm run secret:check
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm test
+      - run: npm run build
+      - run: cargo fmt --all -- --check
+      - run: cargo clippy -p keysmith-core --all-targets --all-features -- -D warnings
+      - run: cargo test -p keysmith-core --all-features
+
   build:
+    needs: verify-tag
     strategy:
       fail-fast: false
       matrix:
