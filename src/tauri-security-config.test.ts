@@ -6,7 +6,12 @@ interface TauriConfig {
   build?: { removeUnusedCommands?: boolean };
   app?: {
     withGlobalTauri?: boolean;
-    security?: { capabilities?: string[] };
+    security?: {
+      capabilities?: string[];
+      csp?: string;
+      devCsp?: string;
+      freezePrototype?: boolean;
+    };
   };
 }
 
@@ -29,7 +34,22 @@ describe("Tauri security configuration", () => {
 
     expect(config.app?.withGlobalTauri).toBe(false);
     expect(config.app?.security?.capabilities).toEqual(["main-capability"]);
+    expect(config.app?.security?.freezePrototype).toBe(true);
     expect(config.build?.removeUnusedCommands).toBe(true);
+  });
+
+  it("keeps production CSP stricter than development allowances", async () => {
+    const config = await readJson<TauriConfig>("../src-tauri/tauri.conf.json");
+    const csp = config.app?.security?.csp ?? "";
+    const devCsp = config.app?.security?.devCsp ?? "";
+
+    expect(csp).toContain("script-src 'self'");
+    expect(csp).toContain("style-src 'self'");
+    expect(csp).not.toContain("'unsafe-inline'");
+    expect(csp).not.toContain("blob:");
+    expect(csp).not.toContain("data:");
+    expect(devCsp).toContain("ws://localhost:1420");
+    expect(devCsp).toContain("style-src 'self' 'unsafe-inline'");
   });
 
   it("keeps main capability narrow and excludes Tauri core defaults", async () => {
