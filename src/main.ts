@@ -211,7 +211,7 @@ function switchMode(next: GeneratorMode): void {
     tab.setAttribute("aria-selected", String(selected));
     tab.tabIndex = selected ? 0 : -1;
   });
-  ui.passwordControls.classList.toggle("hidden", next !== "password");
+  ui.passwordControls.classList.toggle("hidden", next === "passphrase");
   ui.passphraseControls.classList.toggle("hidden", next !== "passphrase");
   ui.batchControls.classList.toggle("hidden", next !== "batch");
   resetOutput();
