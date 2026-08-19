@@ -32,5 +32,8 @@ fn passphrase_uses_requested_word_count() {
     let options = PassphraseOptions::default();
     let phrase = generate_passphrase(&options)
         .unwrap_or_else(|error| panic!("passphrase failed: {error}"));
-    assert_eq!(phrase.split('-').count(), options.words);
+    assert_eq!(
+        phrase.split('-').count(),
+        options.words
+    );
 }
