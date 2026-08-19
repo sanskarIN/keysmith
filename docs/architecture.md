@@ -30,4 +30,5 @@ Core errors are typed with `thiserror`. Tauri translates them into user-safe str
 
 - `docs/adr/0001-rust-core-tauri-ui.md`
 - `docs/adr/0002-os-csprng-and-no-secret-storage.md`
+- `docs/adr/0003-frontend-localization-boundary.md`
 - `docs/i18n.md`
