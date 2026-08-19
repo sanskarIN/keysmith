@@ -3,6 +3,13 @@ import { readFile } from "node:fs/promises";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import type { BatchSecretResult, PassphraseResult, PasswordPreset, SecretResult } from "./types";
 
+const tauri = vi.hoisted(() => ({
+  invoke: vi.fn(),
+  isTauri: vi.fn(() => true),
+}));
+
+vi.mock("@tauri-apps/api/core", () => tauri);
+
 const generatedPassword: SecretResult = {
   secret: "Ab3!fictional-safe-test",
   strength: {
@@ -46,32 +53,6 @@ const presets: PasswordPreset[] = [
   },
 ];
 
-const invoke = vi.fn(
-  (command: string, args?: Record<string, unknown>): Promise<unknown> => {
-    const request = { command, args };
-    switch (request.command) {
-      case "get_presets_command":
-        return Promise.resolve(presets);
-      case "generate_password_command":
-        return Promise.resolve(generatedPassword);
-      case "generate_passphrase_command":
-        return Promise.resolve(generatedPassphrase);
-      case "generate_batch_command":
-        return Promise.resolve(generatedBatch);
-      case "copy_secret_command":
-      case "clear_clipboard_command":
-        return Promise.resolve(undefined);
-      default:
-        return Promise.reject(new Error(`Unexpected command in integration test: ${request.command}`));
-    }
-  },
-);
-
-const bridgeInvoke: TauriCore["invoke"] = <T>(
-  command: string,
-  args?: Record<string, unknown>,
-): Promise<T> => invoke(command, args).then((value) => value as T);
-
 function mediaQueryList(query: string): MediaQueryList {
   return {
     matches: false,
@@ -93,6 +74,29 @@ function button(id: string): HTMLButtonElement {
 
 describe("primary frontend journey", () => {
   beforeAll(async () => {
+    tauri.invoke.mockImplementation(
+      (command: string, args?: Record<string, unknown>): Promise<unknown> => {
+        const request = { command, args };
+        switch (request.command) {
+          case "get_presets_command":
+            return Promise.resolve(presets);
+          case "generate_password_command":
+            return Promise.resolve(generatedPassword);
+          case "generate_passphrase_command":
+            return Promise.resolve(generatedPassphrase);
+          case "generate_batch_command":
+            return Promise.resolve(generatedBatch);
+          case "copy_secret_command":
+          case "clear_clipboard_command":
+            return Promise.resolve(undefined);
+          default:
+            return Promise.reject(
+              new Error(`Unexpected command in integration test: ${request.command}`),
+            );
+        }
+      },
+    );
+
     const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
     const parsed = new DOMParser().parseFromString(html, "text/html");
     document.head.innerHTML = parsed.head.innerHTML;
@@ -101,11 +105,6 @@ describe("primary frontend journey", () => {
     localStorage.clear();
     localStorage.setItem("keysmith.onboardingComplete", "true");
     window.matchMedia = (query: string) => mediaQueryList(query);
-    window.__TAURI__ = {
-      core: {
-        invoke: bridgeInvoke,
-      },
-    };
 
     await import("./main");
     await vi.waitFor(() => {
@@ -125,7 +124,7 @@ describe("primary frontend journey", () => {
 
     button("copy-button").click();
     await vi.waitFor(() => {
-      expect(invoke).toHaveBeenCalledWith("copy_secret_command", {
+      expect(tauri.invoke).toHaveBeenCalledWith("copy_secret_command", {
         secret: generatedPassword.secret,
         clearAfterSeconds: 30,
       });
@@ -161,7 +160,7 @@ describe("primary frontend journey", () => {
 
     button("copy-batch-button").click();
     await vi.waitFor(() => {
-      expect(invoke).toHaveBeenCalledWith("copy_secret_command", {
+      expect(tauri.invoke).toHaveBeenCalledWith("copy_secret_command", {
         secret: "fictional-batch-one\nfictional-batch-two",
         clearAfterSeconds: 30,
       });
