@@ -26,6 +26,17 @@ describe("local non-secret settings", () => {
     expect(getClipboardClearSeconds()).toBe(30);
   });
 
+  it("normalizes unsupported clipboard duration writes", () => {
+    setClipboardClearSeconds(999);
+    expect(localStorage.getItem("keysmith.clipboardClearSeconds")).toBe("30");
+    expect(getClipboardClearSeconds()).toBe(30);
+  });
+
+  it("normalizes non-integer clipboard duration writes", () => {
+    setClipboardClearSeconds(15.5);
+    expect(localStorage.getItem("keysmith.clipboardClearSeconds")).toBe("30");
+  });
+
   it("round trips theme preference", () => {
     setThemePreference("dark");
     expect(getThemePreference()).toBe("dark");
