@@ -4,7 +4,10 @@ use proptest::prelude::*;
 proptest! {
     #[test]
     fn generated_password_has_exact_requested_length(length in 4usize..=128) {
-        let options = PasswordOptions { length, ..PasswordOptions::default() };
+        let options = PasswordOptions {
+            length,
+            ..PasswordOptions::default()
+        };
         let password = generate_password(&options)
             .map_err(|error| TestCaseError::fail(error.to_string()))?;
         prop_assert_eq!(password.chars().count(), length);
