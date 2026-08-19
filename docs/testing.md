@@ -13,6 +13,7 @@ Vitest covers:
 - non-secret preference persistence, write normalization, and safe defaults,
 - first-run onboarding state,
 - typed Tauri command names and payloads,
+- lightweight secret-only batch IPC results,
 - fail-closed behavior when the desktop bridge is unavailable,
 - deterministic batch-export formatting,
 - structured diagnostic redaction and recursion limits,
@@ -20,7 +21,7 @@ Vitest covers:
 - localized preset and strength metadata,
 - static accessibility structure in the real `index.html`, including unique IDs, explicit label targets, tab/panel relationships, button accessible names, and dialog labelling,
 - primary-button design-token contrast in both themes against the WCAG AA 4.5:1 normal-text threshold,
-- a jsdom integration journey that loads the real `index.html`, mocks the narrow Tauri bridge, generates a password, copies it with the configured auto-clear value, and exercises keyboard tab switching.
+- a jsdom integration journey that loads the real `index.html`, mocks the narrow Tauri bridge, verifies localized preset metadata, generates/copies a password, generates a passphrase and entropy status, generates a strength-free batch, verifies batch actions, copies the batch with the configured auto-clear value, and exercises keyboard mode switching.
 
 The integration test intentionally uses fictional deterministic test output; it does not generate or commit a real credential.
 
@@ -45,6 +46,10 @@ The integration test intentionally uses fictional deterministic test output; it 
 The release-candidate checklist in `docs/verification.md` covers keyboard navigation, reduced motion, focus order, mode switching, generation, passphrases, presets, batch export warnings, copy, conditional clipboard clear, themes, onboarding, Settings, About links, text scaling, and unexpected network behavior.
 
 Real packaged-app checks remain manual because clipboard behavior, native webviews, platform dialogs, installers, assistive technologies, and operating-system integration cannot be truthfully validated by jsdom/static tests.
+
+## Performance regression rule
+
+Do not add expensive per-item work to the maximum batch path unless the Batch UI consumes the result. Single-password/passphrase strength scoring remains intentional; batch items stay strength-free unless product requirements change. Record measured release-build regressions according to `docs/performance.md` rather than inventing timing claims.
 
 ## Security regression rule
 
