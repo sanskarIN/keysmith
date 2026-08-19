@@ -45,7 +45,7 @@ Directories are represented by the files they contain. When a file is added, rem
 - `.github/ISSUE_TEMPLATE/config.yml` — issue routing/contact configuration.
 - `.github/workflows/ci.yml` — primary PR/main frontend audit/secret/docs/quality, Rust core policy/tests, lockfile artifacts, and cross-platform Tauri check/Clippy matrix.
 - `.github/workflows/codeql.yml` — JavaScript/TypeScript and full-workspace Rust CodeQL analysis.
-- `.github/workflows/release.yml` — `v*` release preflight plus draft multi-platform Tauri artifact builds.
+- `.github/workflows/release.yml` — `v*` release preflight requiring committed lockfiles, locked dependency verification, documentation/security/core gates, read-only default token scope, and draft multi-platform Tauri artifact builds with write permission only in the build job.
 
 ## Rust security core
 
@@ -102,6 +102,7 @@ Directories are represented by the files they contain. When a file is added, rem
 - `src/contrast.test.ts` — rendered/design-token contrast regression checks for important control states.
 - `src/tauri-security-config.test.ts` — static native config tests for no global bridge, capability scope, unused commands, permissions, and security drift.
 - `src/version-consistency.test.ts` — known product-version synchronization tests across metadata/UI surfaces.
+- `src/release-workflow.test.ts` — static release-workflow regression tests requiring committed lockfiles, `npm ci`, Cargo locked operations, no tag-time lock generation, documentation/cargo-deny gates, and read-only preflight/write-only artifact permissions.
 - `src/styles.css` — complete design tokens, light/dark themes, layout, output/warning/dialog/focus/responsive/reduced-motion styling.
 - `src/assets/logo.svg` — editable vector KeySmith application mark.
 
@@ -132,9 +133,9 @@ Directories are represented by the files they contain. When a file is added, rem
 - `docs/frontend.md` — frontend state/API/staleness/export/link/storage/localization/logging/accessibility/test architecture.
 - `docs/setup.md` — Windows/macOS/Linux development prerequisites and first-run setup.
 - `docs/development.md` — secure development workflow and layer ownership.
-- `docs/testing.md` — automated/static/security/native/manual test strategy.
+- `docs/testing.md` — automated/static/security/native/manual test strategy plus lockfile/release-preflight verification.
 - `docs/verification.md` — exact-commit automated and packaged desktop release-candidate checklist.
-- `docs/release.md` — version/lockfile/tag/signing/artifact/publication process.
+- `docs/release.md` — version/committed-lockfile/tag/signing/artifact/publication process.
 - `docs/troubleshooting.md` — frontend/Rust/Tauri/native/CI/build diagnosis.
 - `docs/accessibility.md` — accessibility behavior, automated checks, and manual packaged verification.
 - `docs/performance.md` — security-preserving performance budgets/measurement guidance.
