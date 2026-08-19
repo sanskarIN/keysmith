@@ -1,8 +1,10 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from "vitest";
 import {
+  completeOnboarding,
   getClipboardClearSeconds,
   getThemePreference,
+  isOnboardingComplete,
   setClipboardClearSeconds,
   setThemePreference,
 } from "./storage";
@@ -27,5 +29,12 @@ describe("local non-secret settings", () => {
   it("round trips theme preference", () => {
     setThemePreference("dark");
     expect(getThemePreference()).toBe("dark");
+  });
+
+  it("records onboarding completion without storing a secret", () => {
+    expect(isOnboardingComplete()).toBe(false);
+    completeOnboarding();
+    expect(isOnboardingComplete()).toBe(true);
+    expect(localStorage.length).toBe(1);
   });
 });
