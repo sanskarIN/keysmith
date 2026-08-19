@@ -1,3 +1,4 @@
+import { invoke as tauriInvoke, isTauri } from "@tauri-apps/api/core";
 import type {
   BatchSecretResult,
   PassphraseOptions,
@@ -8,12 +9,12 @@ import type {
 } from "./types";
 
 function invoke<T>(command: string, args?: Record<string, unknown>): Promise<T> {
-  if (!window.__TAURI__?.core?.invoke) {
+  if (!isTauri()) {
     return Promise.reject(
       new Error("KeySmith desktop bridge is unavailable. Run the app through Tauri."),
     );
   }
-  return window.__TAURI__.core.invoke<T>(command, args);
+  return tauriInvoke<T>(command, args);
 }
 
 export const api = {
