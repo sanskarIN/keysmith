@@ -18,6 +18,8 @@ Vitest covers:
 - structured diagnostic redaction and recursion limits,
 - localization application and fallback behavior,
 - localized preset and strength metadata,
+- static accessibility structure in the real `index.html`, including unique IDs, explicit label targets, tab/panel relationships, button accessible names, and dialog labelling,
+- primary-button design-token contrast in both themes against the WCAG AA 4.5:1 normal-text threshold,
 - a jsdom integration journey that loads the real `index.html`, mocks the narrow Tauri bridge, generates a password, copies it with the configured auto-clear value, and exercises keyboard tab switching.
 
 The integration test intentionally uses fictional deterministic test output; it does not generate or commit a real credential.
@@ -42,7 +44,7 @@ The integration test intentionally uses fictional deterministic test output; it 
 
 The release-candidate checklist in `docs/verification.md` covers keyboard navigation, reduced motion, focus order, mode switching, generation, passphrases, presets, batch export warnings, copy, conditional clipboard clear, themes, onboarding, Settings, About links, text scaling, and unexpected network behavior.
 
-Real packaged-app checks remain manual because clipboard behavior, native webviews, platform dialogs, installers, and operating-system integration cannot be truthfully validated by the jsdom frontend integration test.
+Real packaged-app checks remain manual because clipboard behavior, native webviews, platform dialogs, installers, assistive technologies, and operating-system integration cannot be truthfully validated by jsdom/static tests.
 
 ## Security regression rule
 
