@@ -24,7 +24,7 @@ describe("structured log redaction", () => {
     });
   });
 
-  it("redacts credential, API-key, session, and private-key fields", () => {
+  it("redacts credential, API-key, session, private-key, and path fields", () => {
     const redacted = redactForLog({
       credential: "fictional",
       apiKey: "fictional",
@@ -32,6 +32,10 @@ describe("structured log redaction", () => {
       sessionId: "fictional",
       privateKey: "fictional",
       private_key: "fictional",
+      path: "/private/example",
+      filePath: "/private/example.txt",
+      filesystem_path: "/private/example.txt",
+      exportPath: "/private/export.txt",
     });
 
     expect(redacted).toEqual({
@@ -41,6 +45,10 @@ describe("structured log redaction", () => {
       sessionId: "[REDACTED]",
       privateKey: "[REDACTED]",
       private_key: "[REDACTED]",
+      path: "[REDACTED]",
+      filePath: "[REDACTED]",
+      filesystem_path: "[REDACTED]",
+      exportPath: "[REDACTED]",
     });
   });
 
