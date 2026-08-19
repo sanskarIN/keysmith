@@ -65,6 +65,21 @@ fn custom_symbols_reject_oversized_or_invisible_values() {
 }
 
 #[test]
+fn invalid_custom_symbols_are_ignored_when_symbols_are_disabled() {
+    let options = PasswordOptions {
+        length: 16,
+        symbols: false,
+        custom_symbols: Some("invalid symbols with spaces".to_owned()),
+        ..PasswordOptions::default()
+    };
+
+    let password = generate_password(&options)
+        .unwrap_or_else(|error| panic!("generation without symbols failed: {error}"));
+    assert_eq!(password.chars().count(), 16);
+    assert!(password.chars().all(|character| character.is_ascii_alphanumeric()));
+}
+
+#[test]
 fn ambiguity_filter_rejects_empty_custom_symbol_pool() {
     let options = PasswordOptions {
         length: 16,
