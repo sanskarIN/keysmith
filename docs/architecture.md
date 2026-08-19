@@ -8,7 +8,7 @@ Owns password policies, CSPRNG sampling, passphrase selection, presets, errors, 
 
 ## Desktop adapter — `src-tauri`
 
-Exposes only the commands needed by the UI: generation, presets, clipboard copy, and clipboard clear. Clipboard auto-clear checks that the clipboard still contains the copied value before clearing it. Clipboard payloads are bounded while still supporting the maximum documented batch size. Tauri capabilities and CSP are intentionally narrow.
+Exposes only the commands needed by the UI: generation, presets, clipboard copy, and clipboard clear. Single-password and passphrase commands add zxcvbn strength metadata because those views display it. The batch command intentionally returns lightweight secret-only records and skips per-item zxcvbn work because the Batch view does not consume strength metadata. Clipboard auto-clear checks that the clipboard still contains the copied value before clearing it. Clipboard payloads are bounded while still supporting the maximum documented batch size. Tauri capabilities and CSP are intentionally narrow.
 
 ## Presentation — `src` + `index.html`
 
@@ -20,7 +20,7 @@ User-facing copy is separated from application behavior under `src/i18n`. Static
 
 `UI input → typed IPC → Rust validation → OS CSPRNG / word list → result → UI`. There is no application server, database, authentication service, or telemetry endpoint.
 
-For display-only metadata, stable backend values such as preset IDs and strength scores are mapped to localized frontend copy. Unknown future values retain backend fallbacks rather than failing generation.
+For display-only metadata, stable backend values such as preset IDs and strength scores are mapped to localized frontend copy. Unknown future values retain backend fallbacks rather than failing generation. Batch IPC deliberately omits unused strength metadata to keep the maximum-size path bounded and efficient.
 
 ## Error handling
 
