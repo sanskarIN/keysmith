@@ -44,7 +44,7 @@ describe("Tauri IPC client", () => {
 
     expect(invoke).toHaveBeenCalledWith("generate_batch_command", { options, count: 12 });
     expect(result).toEqual([{ secret: "fictional-batch-value" }]);
-    expect("strength" in result[0]!).toBe(false);
+    expect(result.at(0)).not.toHaveProperty("strength");
   });
 
   it("passes clipboard expiry through the narrow clipboard command", async () => {
