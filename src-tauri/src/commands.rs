@@ -4,7 +4,7 @@ use keysmith_core::{
 };
 use serde::Serialize;
 use std::{thread, time::Duration};
-use zeroize::Zeroize;
+use zeroize::Zeroizing;
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -62,20 +62,20 @@ pub fn get_presets_command() -> Vec<keysmith_core::PasswordPreset> {
 }
 
 #[tauri::command]
-pub fn copy_secret_command(mut secret: String, clear_after_seconds: u64) -> Result<(), String> {
+pub fn copy_secret_command(secret: String, clear_after_seconds: u64) -> Result<(), String> {
+    let secret = Zeroizing::new(secret);
     if secret.chars().count() > 4096 {
-        secret.zeroize();
         return Err("clipboard value is too large".to_owned());
     }
 
     let mut clipboard =
         arboard::Clipboard::new().map_err(|_| "clipboard is unavailable".to_owned())?;
     clipboard
-        .set_text(secret.clone())
+        .set_text(secret.as_str())
         .map_err(|_| "failed to write to clipboard".to_owned())?;
 
     if clear_after_seconds > 0 {
-        let mut expected = secret.clone();
+        let expected = Zeroizing::new(secret.to_string());
         thread::spawn(move || {
             thread::sleep(Duration::from_secs(clear_after_seconds.min(300)));
             if let Ok(mut clipboard) = arboard::Clipboard::new() {
@@ -83,11 +83,9 @@ pub fn copy_secret_command(mut secret: String, clear_after_seconds: u64) -> Resu
                     let _ = clipboard.set_text(String::new());
                 }
             }
-            expected.zeroize();
         });
     }
 
-    secret.zeroize();
     Ok(())
 }
 
