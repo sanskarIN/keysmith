@@ -7,8 +7,12 @@ const tauri = vi.hoisted(() => ({
   invoke: vi.fn(),
   isTauri: vi.fn(() => true),
 }));
+const opener = vi.hoisted(() => ({
+  openUrl: vi.fn(),
+}));
 
 vi.mock("@tauri-apps/api/core", () => tauri);
+vi.mock("@tauri-apps/plugin-opener", () => opener);
 
 const generatedPassword: SecretResult = {
   secret: "Ab3!fictional-safe-test",
@@ -96,6 +100,7 @@ describe("primary frontend journey", () => {
         }
       },
     );
+    opener.openUrl.mockResolvedValue(undefined);
 
     const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
     const parsed = new DOMParser().parseFromString(html, "text/html");
@@ -164,6 +169,20 @@ describe("primary frontend journey", () => {
         secret: "fictional-batch-one\nfictional-batch-two",
         clearAfterSeconds: 30,
       });
+    });
+  });
+
+  it("opens an About destination through the native scoped opener", async () => {
+    opener.openUrl.mockClear();
+    const githubLink = document.querySelector<HTMLAnchorElement>(
+      '.link-stack a[href="https://github.com/sanskarIN"]',
+    );
+    if (!githubLink) throw new Error("Missing GitHub About link in integration fixture");
+
+    githubLink.click();
+
+    await vi.waitFor(() => {
+      expect(opener.openUrl).toHaveBeenCalledWith("https://github.com/sanskarIN");
     });
   });
 
