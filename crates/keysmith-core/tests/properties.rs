@@ -1,4 +1,4 @@
-use keysmith_core::{generate_password, PasswordOptions};
+use keysmith_core::{PasswordOptions, generate_password};
 use proptest::prelude::*;
 
 proptest! {
