@@ -30,19 +30,27 @@ const presets: PasswordPreset[] = [
   },
 ];
 
-const invoke = vi.fn((command: string): Promise<unknown> => {
-  switch (command) {
-    case "get_presets_command":
-      return Promise.resolve(presets);
-    case "generate_password_command":
-      return Promise.resolve(generated);
-    case "copy_secret_command":
-    case "clear_clipboard_command":
-      return Promise.resolve(undefined);
-    default:
-      return Promise.reject(new Error(`Unexpected command in integration test: ${command}`));
-  }
-});
+const invoke = vi.fn(
+  (command: string, args?: Record<string, unknown>): Promise<unknown> => {
+    const request = { command, args };
+    switch (request.command) {
+      case "get_presets_command":
+        return Promise.resolve(presets);
+      case "generate_password_command":
+        return Promise.resolve(generated);
+      case "copy_secret_command":
+      case "clear_clipboard_command":
+        return Promise.resolve(undefined);
+      default:
+        return Promise.reject(new Error(`Unexpected command in integration test: ${request.command}`));
+    }
+  },
+);
+
+const bridgeInvoke: TauriCore["invoke"] = <T>(
+  command: string,
+  args?: Record<string, unknown>,
+): Promise<T> => invoke(command, args).then((value) => value as T);
 
 function mediaQueryList(query: string): MediaQueryList {
   return {
@@ -69,7 +77,7 @@ describe("primary frontend journey", () => {
     window.matchMedia = (query: string) => mediaQueryList(query);
     window.__TAURI__ = {
       core: {
-        invoke: invoke as TauriCore["invoke"],
+        invoke: bridgeInvoke,
       },
     };
 
