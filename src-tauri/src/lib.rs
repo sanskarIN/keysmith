@@ -1,4 +1,5 @@
 mod commands;
+mod export;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -12,7 +13,7 @@ pub fn run() {
             commands::get_presets_command,
             commands::copy_secret_command,
             commands::clear_clipboard_command,
-            commands::export_batch_command,
+            export::export_batch_command,
         ])
         .run(tauri::generate_context!())
         .unwrap_or_else(|error| panic!("failed to run KeySmith: {error}"));
