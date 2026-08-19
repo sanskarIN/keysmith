@@ -17,6 +17,12 @@ pub struct SecretResult {
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct BatchSecretResult {
+    secret: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct PassphraseResult {
     secret: String,
     strength: StrengthEstimate,
@@ -34,16 +40,12 @@ pub fn generate_password_command(options: PasswordOptions) -> Result<SecretResul
 pub fn generate_batch_command(
     options: PasswordOptions,
     count: usize,
-) -> Result<Vec<SecretResult>, String> {
-    let results = generate_batch(&options, count)
+) -> Result<Vec<BatchSecretResult>, String> {
+    generate_batch(&options, count)
         .map_err(|error| error.to_string())?
         .into_iter()
-        .map(|secret| {
-            let strength = estimate_strength(&secret);
-            SecretResult { secret, strength }
-        })
-        .collect();
-    Ok(results)
+        .map(|secret| Ok(BatchSecretResult { secret }))
+        .collect()
 }
 
 #[tauri::command]
