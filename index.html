@@ -9,100 +9,115 @@
     <link rel="icon" href="/src/assets/logo.svg" type="image/svg+xml" />
   </head>
   <body>
-    <a class="skip-link" href="#generator">Skip to generator</a>
+    <a class="skip-link" href="#generator" data-i18n="skipToGenerator">Skip to generator</a>
     <div id="app">
       <header class="topbar">
-        <a class="brand" href="#generator" aria-label="KeySmith home">
+        <a class="brand" href="#generator" aria-label="KeySmith home" data-i18n-aria-label="brandHomeAria">
           <img src="/src/assets/logo.svg" alt="" width="38" height="38" />
           <span>KeySmith</span>
         </a>
         <div class="top-actions">
-          <span class="privacy-pill" title="No network access or telemetry">Offline • Private</span>
-          <button class="icon-button" id="theme-button" type="button" aria-label="Change theme">◐</button>
-          <button class="secondary-button" id="settings-button" type="button">Settings</button>
-          <button class="secondary-button" id="about-button" type="button">About</button>
+          <span
+            class="privacy-pill"
+            title="No network access or telemetry"
+            data-i18n="offlinePrivate"
+            data-i18n-title="offlinePrivateTitle"
+            >Offline • Private</span
+          >
+          <button
+            class="icon-button"
+            id="theme-button"
+            type="button"
+            aria-label="Change theme"
+            data-i18n-aria-label="changeThemeAria"
+          >
+            ◐
+          </button>
+          <button class="secondary-button" id="settings-button" type="button" data-i18n="settings">Settings</button>
+          <button class="secondary-button" id="about-button" type="button" data-i18n="about">About</button>
         </div>
       </header>
 
       <main class="shell" id="generator">
         <section class="hero" aria-labelledby="hero-title">
-          <p class="eyebrow">SECURE BY DEFAULT</p>
-          <h1 id="hero-title">Forge strong credentials locally.</h1>
-          <p>Passwords never leave this device. Generation uses your operating system's cryptographic random source.</p>
+          <p class="eyebrow" data-i18n="secureByDefault">SECURE BY DEFAULT</p>
+          <h1 id="hero-title" data-i18n="heroTitle">Forge strong credentials locally.</h1>
+          <p data-i18n="heroBody">Passwords never leave this device. Generation uses your operating system's cryptographic random source.</p>
         </section>
 
         <section class="workspace">
           <div class="card generator-card">
-            <div class="segmented" role="tablist" aria-label="Generator mode">
-              <button role="tab" aria-selected="true" data-mode="password" id="tab-password">Password</button>
-              <button role="tab" aria-selected="false" data-mode="passphrase" id="tab-passphrase">Passphrase</button>
-              <button role="tab" aria-selected="false" data-mode="batch" id="tab-batch">Batch</button>
+            <div class="segmented" role="tablist" aria-label="Generator mode" data-i18n-aria-label="generatorModeAria">
+              <button role="tab" aria-selected="true" aria-controls="password-controls" data-mode="password" id="tab-password" data-i18n="password">Password</button>
+              <button role="tab" aria-selected="false" aria-controls="passphrase-controls" data-mode="passphrase" id="tab-passphrase" tabindex="-1" data-i18n="passphrase">Passphrase</button>
+              <button role="tab" aria-selected="false" aria-controls="batch-controls" data-mode="batch" id="tab-batch" tabindex="-1" data-i18n="batch">Batch</button>
             </div>
 
             <div class="secret-panel" aria-live="polite">
               <div class="secret-meta">
-                <span id="strength-label">Ready</span>
-                <span id="strength-score" class="strength-score" aria-label="Strength score"></span>
+                <span id="strength-label" data-i18n="ready">Ready</span>
+                <span id="strength-score" class="strength-score" aria-label="Strength score" data-i18n-aria-label="strengthScoreAria"></span>
               </div>
-              <output id="secret-output" class="secret-output" aria-label="Generated secret">Select Generate to begin</output>
+              <output id="secret-output" class="secret-output" aria-label="Generated secret" data-i18n-aria-label="generatedSecretAria" data-i18n="outputPlaceholder">Select Generate to begin</output>
               <div class="secret-actions">
-                <button id="copy-button" class="secondary-button" type="button" disabled>Copy</button>
-                <button id="generate-button" class="primary-button" type="button">Generate</button>
+                <button id="copy-button" class="secondary-button" type="button" disabled data-i18n="copy">Copy</button>
+                <button id="generate-button" class="primary-button" type="button" data-i18n="generate">Generate</button>
               </div>
             </div>
 
             <div id="password-controls" class="controls" role="tabpanel" aria-labelledby="tab-password">
               <div class="field-row">
-                <label for="length">Length <strong id="length-value">20</strong></label>
+                <label for="length"><span data-i18n="length">Length</span> <strong id="length-value">20</strong></label>
                 <input id="length" type="range" min="4" max="128" value="20" />
               </div>
               <fieldset class="check-grid">
-                <legend>Character sets</legend>
-                <label><input id="lowercase" type="checkbox" checked /> Lowercase</label>
-                <label><input id="uppercase" type="checkbox" checked /> Uppercase</label>
-                <label><input id="digits" type="checkbox" checked /> Numbers</label>
-                <label><input id="symbols" type="checkbox" checked /> Symbols</label>
-                <label class="wide"><input id="ambiguous" type="checkbox" checked /> Exclude ambiguous characters</label>
+                <legend data-i18n="characterSets">Character sets</legend>
+                <label><input id="lowercase" type="checkbox" checked /> <span data-i18n="lowercase">Lowercase</span></label>
+                <label><input id="uppercase" type="checkbox" checked /> <span data-i18n="uppercase">Uppercase</span></label>
+                <label><input id="digits" type="checkbox" checked /> <span data-i18n="numbers">Numbers</span></label>
+                <label><input id="symbols" type="checkbox" checked /> <span data-i18n="symbols">Symbols</span></label>
+                <label class="wide"><input id="ambiguous" type="checkbox" checked /> <span data-i18n="excludeAmbiguous">Exclude ambiguous characters</span></label>
               </fieldset>
               <div class="field-row stacked">
-                <label for="custom-symbols">Custom symbols <span class="muted">optional</span></label>
-                <input id="custom-symbols" maxlength="40" placeholder="Use default symbol set" autocomplete="off" spellcheck="false" />
+                <label for="custom-symbols"><span data-i18n="customSymbols">Custom symbols</span> <span class="muted" data-i18n="optional">optional</span></label>
+                <input id="custom-symbols" maxlength="40" placeholder="Use default symbol set" data-i18n-placeholder="customSymbolsPlaceholder" autocomplete="off" spellcheck="false" />
               </div>
               <div class="field-row stacked">
-                <label for="preset">Policy preset</label>
-                <select id="preset"><option value="">Custom</option></select>
-                <p id="preset-description" class="hint">Choose a preset or tune the controls yourself.</p>
+                <label for="preset" data-i18n="policyPreset">Policy preset</label>
+                <select id="preset"><option value="" data-i18n="custom">Custom</option></select>
+                <p id="preset-description" class="hint" data-i18n="presetHint">Choose a preset or tune the controls yourself.</p>
               </div>
             </div>
 
             <div id="passphrase-controls" class="controls hidden" role="tabpanel" aria-labelledby="tab-passphrase">
               <div class="field-row">
-                <label for="words">Words <strong id="words-value">5</strong></label>
+                <label for="words"><span data-i18n="words">Words</span> <strong id="words-value">5</strong></label>
                 <input id="words" type="range" min="3" max="12" value="5" />
               </div>
               <div class="field-row stacked">
-                <label for="separator">Separator</label>
+                <label for="separator" data-i18n="separator">Separator</label>
                 <input id="separator" maxlength="3" value="-" autocomplete="off" />
               </div>
               <fieldset class="check-grid">
-                <legend>Passphrase options</legend>
-                <label><input id="capitalize" type="checkbox" /> Capitalize words</label>
-                <label><input id="include-number" type="checkbox" /> Append two digits</label>
+                <legend data-i18n="passphraseOptions">Passphrase options</legend>
+                <label><input id="capitalize" type="checkbox" /> <span data-i18n="capitalizeWords">Capitalize words</span></label>
+                <label><input id="include-number" type="checkbox" /> <span data-i18n="appendTwoDigits">Append two digits</span></label>
               </fieldset>
-              <p class="hint">Words come from the EFF large Diceware word list packaged with the Rust core.</p>
+              <p class="hint" data-i18n="passphraseHint">Words come from the EFF large Diceware word list packaged with the Rust core.</p>
             </div>
 
             <div id="batch-controls" class="controls hidden" role="tabpanel" aria-labelledby="tab-batch">
               <div class="field-row stacked">
-                <label for="batch-count">Number of passwords</label>
+                <label for="batch-count" data-i18n="numberOfPasswords">Number of passwords</label>
                 <input id="batch-count" type="number" min="1" max="500" value="10" />
               </div>
               <div class="warning-box" role="note">
-                <strong>Export carefully.</strong> Batch files contain usable credentials. Store them only in a trusted encrypted location and delete temporary copies.
+                <strong data-i18n="exportCarefully">Export carefully.</strong>
+                <span data-i18n="batchWarning">Batch files contain usable credentials. Store them only in a trusted encrypted location and delete temporary copies.</span>
               </div>
               <div class="batch-actions">
-                <button id="copy-batch-button" class="secondary-button" type="button" disabled>Copy all</button>
-                <button id="export-batch-button" class="secondary-button" type="button" disabled>Export .txt</button>
+                <button id="copy-batch-button" class="secondary-button" type="button" disabled data-i18n="copyAll">Copy all</button>
+                <button id="export-batch-button" class="secondary-button" type="button" disabled data-i18n="exportTxt">Export .txt</button>
               </div>
             </div>
 
@@ -110,101 +125,101 @@
           </div>
 
           <aside class="card settings-card" aria-labelledby="settings-heading">
-            <h2 id="settings-heading">Privacy & convenience</h2>
+            <h2 id="settings-heading" data-i18n="privacyConvenience">Privacy & convenience</h2>
             <label class="setting-row">
-              <span><strong>Clipboard auto-clear</strong><small>Clear only if clipboard still contains the copied secret.</small></span>
+              <span><strong data-i18n="clipboardAutoClear">Clipboard auto-clear</strong><small data-i18n="clipboardAutoClearHint">Clear only if clipboard still contains the copied secret.</small></span>
               <select id="clipboard-time">
-                <option value="0">Never</option>
-                <option value="15">15 seconds</option>
-                <option value="30" selected>30 seconds</option>
-                <option value="60">1 minute</option>
-                <option value="120">2 minutes</option>
+                <option value="0" data-i18n="never">Never</option>
+                <option value="15" data-i18n="seconds15">15 seconds</option>
+                <option value="30" selected data-i18n="seconds30">30 seconds</option>
+                <option value="60" data-i18n="minute1">1 minute</option>
+                <option value="120" data-i18n="minutes2">2 minutes</option>
               </select>
             </label>
-            <button id="clear-clipboard-button" class="secondary-button full" type="button">Clear clipboard now</button>
+            <button id="clear-clipboard-button" class="secondary-button full" type="button" data-i18n="clearClipboardNow">Clear clipboard now</button>
             <hr />
             <div class="trust-list">
-              <p><span aria-hidden="true">✓</span> No telemetry</p>
-              <p><span aria-hidden="true">✓</span> No accounts</p>
-              <p><span aria-hidden="true">✓</span> No password history</p>
-              <p><span aria-hidden="true">✓</span> Open source</p>
+              <p><span aria-hidden="true">✓</span> <span data-i18n="noTelemetry">No telemetry</span></p>
+              <p><span aria-hidden="true">✓</span> <span data-i18n="noAccounts">No accounts</span></p>
+              <p><span aria-hidden="true">✓</span> <span data-i18n="noPasswordHistory">No password history</span></p>
+              <p><span aria-hidden="true">✓</span> <span data-i18n="openSource">Open source</span></p>
             </div>
           </aside>
         </section>
       </main>
 
       <footer>
-        <span>Made by the Sanskar</span>
-        <span>Apache-2.0 • KeySmith v0.1.0</span>
+        <span data-i18n="madeBy">Made by the Sanskar</span>
+        <span data-i18n="footerVersion">Apache-2.0 • KeySmith v0.1.0</span>
       </footer>
 
       <dialog id="onboarding-dialog" aria-labelledby="onboarding-title">
         <form method="dialog" class="dialog-card onboarding-card">
           <img src="/src/assets/logo.svg" alt="" width="72" height="72" />
-          <p class="eyebrow">WELCOME TO KEYSMITH</p>
-          <h2 id="onboarding-title">Strong credentials. No cloud required.</h2>
+          <p class="eyebrow" data-i18n="onboardingEyebrow">WELCOME TO KEYSMITH</p>
+          <h2 id="onboarding-title" data-i18n="onboardingTitle">Strong credentials. No cloud required.</h2>
           <div class="onboarding-grid">
-            <article><strong>Local generation</strong><span>Cryptographic randomness comes from the operating system.</span></article>
-            <article><strong>No secret history</strong><span>Generated passwords and passphrases are not intentionally persisted.</span></article>
-            <article><strong>Safer clipboard</strong><span>Optional auto-clear only removes the value if it is still unchanged.</span></article>
+            <article><strong data-i18n="localGeneration">Local generation</strong><span data-i18n="localGenerationBody">Cryptographic randomness comes from the operating system.</span></article>
+            <article><strong data-i18n="noSecretHistoryTitle">No secret history</strong><span data-i18n="noSecretHistoryBody">Generated passwords and passphrases are not intentionally persisted.</span></article>
+            <article><strong data-i18n="saferClipboard">Safer clipboard</strong><span data-i18n="saferClipboardBody">Optional auto-clear only removes the value if it is still unchanged.</span></article>
           </div>
-          <p class="hint">You can revisit this introduction from Settings at any time.</p>
-          <button id="finish-onboarding-button" class="primary-button full" value="close" type="submit">Start generating</button>
+          <p class="hint" data-i18n="onboardingHint">You can revisit this introduction from Settings at any time.</p>
+          <button id="finish-onboarding-button" class="primary-button full" value="close" type="submit" data-i18n="startGenerating">Start generating</button>
         </form>
       </dialog>
 
       <dialog id="settings-dialog" aria-labelledby="settings-dialog-title">
         <form method="dialog" class="dialog-card settings-dialog-card">
-          <button class="dialog-close" value="close" aria-label="Close Settings dialog">×</button>
-          <h2 id="settings-dialog-title">Settings</h2>
+          <button class="dialog-close" value="close" aria-label="Close Settings dialog" data-i18n-aria-label="closeSettingsAria">×</button>
+          <h2 id="settings-dialog-title" data-i18n="settings">Settings</h2>
           <section class="settings-section" aria-labelledby="appearance-title">
-            <h3 id="appearance-title">Appearance</h3>
+            <h3 id="appearance-title" data-i18n="appearance">Appearance</h3>
             <label class="setting-row" for="settings-theme">
-              <span><strong>Theme</strong><small>Follow the system or choose a fixed appearance.</small></span>
+              <span><strong data-i18n="theme">Theme</strong><small data-i18n="themeHint">Follow the system or choose a fixed appearance.</small></span>
               <select id="settings-theme">
-                <option value="system">System</option>
-                <option value="light">Light</option>
-                <option value="dark">Dark</option>
+                <option value="system" data-i18n="system">System</option>
+                <option value="light" data-i18n="light">Light</option>
+                <option value="dark" data-i18n="dark">Dark</option>
               </select>
             </label>
           </section>
           <section class="settings-section" aria-labelledby="privacy-title">
-            <h3 id="privacy-title">Privacy & data</h3>
-            <p>No account, telemetry, cloud sync, or password history is used. Only non-secret preferences are stored locally.</p>
-            <button id="settings-clear-clipboard" class="secondary-button" type="button">Clear clipboard now</button>
+            <h3 id="privacy-title" data-i18n="privacyData">Privacy & data</h3>
+            <p data-i18n="privacyDataBody">No account, telemetry, cloud sync, or password history is used. Only non-secret preferences are stored locally.</p>
+            <button id="settings-clear-clipboard" class="secondary-button" type="button" data-i18n="clearClipboardNow">Clear clipboard now</button>
           </section>
           <section class="settings-section" aria-labelledby="accessibility-title">
-            <h3 id="accessibility-title">Accessibility</h3>
-            <p>Keyboard navigation, visible focus, scalable text, reduced-motion support, semantic labels, and non-color status cues are built in.</p>
+            <h3 id="accessibility-title" data-i18n="accessibility">Accessibility</h3>
+            <p data-i18n="accessibilityBody">Keyboard navigation, visible focus, scalable text, reduced-motion support, semantic labels, and non-color status cues are built in.</p>
           </section>
           <section class="settings-section" aria-labelledby="updates-title">
-            <h3 id="updates-title">Updates</h3>
-            <p>Version 0.1.0. Release builds are published through the project's GitHub release process; KeySmith performs no silent background network checks.</p>
+            <h3 id="updates-title" data-i18n="updates">Updates</h3>
+            <p data-i18n="updatesBody">Version 0.1.0. Release builds are published through the project's GitHub release process; KeySmith performs no silent background network checks.</p>
           </section>
           <section class="settings-section" aria-labelledby="help-title">
-            <h3 id="help-title">Help & onboarding</h3>
-            <button id="show-onboarding-button" class="secondary-button" type="button">Show introduction</button>
+            <h3 id="help-title" data-i18n="helpOnboarding">Help & onboarding</h3>
+            <button id="show-onboarding-button" class="secondary-button" type="button" data-i18n="showIntroduction">Show introduction</button>
           </section>
         </form>
       </dialog>
 
       <dialog id="about-dialog" aria-labelledby="about-title">
         <form method="dialog" class="dialog-card">
-          <button class="dialog-close" value="close" aria-label="Close About dialog">×</button>
+          <button class="dialog-close" value="close" aria-label="Close About dialog" data-i18n-aria-label="closeAboutAria">×</button>
           <img src="/src/assets/logo.svg" alt="" width="64" height="64" />
           <h2 id="about-title">KeySmith</h2>
-          <p>A security-focused password and passphrase generator that works entirely offline.</p>
+          <p data-i18n="aboutBody">A security-focused password and passphrase generator that works entirely offline.</p>
           <dl class="about-list">
-            <div><dt>License</dt><dd>Apache-2.0</dd></div>
-            <div><dt>Version</dt><dd>0.1.0</dd></div>
-            <div><dt>Credit</dt><dd>Made by the Sanskar</dd></div>
+            <div><dt data-i18n="license">License</dt><dd>Apache-2.0</dd></div>
+            <div><dt data-i18n="version">Version</dt><dd>0.1.0</dd></div>
+            <div><dt data-i18n="credit">Credit</dt><dd data-i18n="madeBy">Made by the Sanskar</dd></div>
           </dl>
           <div class="link-stack">
-            <a href="https://github.com/sanskarIN" target="_blank" rel="noreferrer">GitHub</a>
-            <a href="https://buymeacoffee.com/sanskarIN" target="_blank" rel="noreferrer">Buy Me a Coffee</a>
-            <a href="mailto:supportramsandesh@gmail.com">Support</a>
-            <a href="mailto:sanskarin@outlook.in">Business contact</a>
-            <a href="mailto:sanskarin.business@gmail.com">Business contact 2</a>
+            <a href="https://github.com/sanskarIN" target="_blank" rel="noreferrer" data-i18n="github">GitHub</a>
+            <a href="https://buymeacoffee.com/sanskarIN" target="_blank" rel="noreferrer" data-i18n="buyMeCoffee">Buy Me a Coffee</a>
+            <a href="mailto:supportramsandesh@gmail.com" data-i18n="support">Support</a>
+            <a href="mailto:sanskarin@outlook.in" data-i18n="businessContact">Business contact</a>
+            <a href="mailto:sanskarin.business@gmail.com" data-i18n="businessContact2">Business contact 2</a>
           </div>
         </form>
       </dialog>
