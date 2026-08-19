@@ -8,7 +8,7 @@ pub enum KeySmithError {
     EmptyCharacterSet,
     #[error("password length is too short for the selected required character sets")]
     LengthBelowRequiredSets,
-    #[error("custom symbols must contain at most 40 visible non-whitespace, non-alphanumeric characters")]
+    #[error("custom symbols must contain at most 40 ASCII punctuation characters")]
     InvalidCustomSymbols,
     #[error("batch size must be between 1 and 500")]
     InvalidBatchSize,
