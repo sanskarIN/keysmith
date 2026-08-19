@@ -39,7 +39,8 @@ This model covers local password/passphrase generation, Tauri IPC, clipboard use
 
 - Generating huge batches to exhaust memory: capped at 500.
 - Oversized clipboard inputs: command rejects values over 65,536 characters, which still permits the largest supported 500 × 128-character batch plus separators.
-- Oversized or invisible custom-symbol sets: rejected by the Rust core; custom symbols are capped at 40 visible non-whitespace characters.
+- Oversized, invisible, whitespace, or alphanumeric custom-symbol sets: rejected by the Rust core; custom symbols are capped at 40 visible non-whitespace, non-alphanumeric characters so the symbol class cannot silently become another letter/digit class.
+- Invalid custom-symbol text is ignored when symbols are disabled because it cannot influence that generation request.
 - Invalid passphrase separator/control characters: rejected by core validation.
 - Empty character classes after ambiguity filtering: rejected.
 - Unsupported persisted clipboard-clear values: normalized to the privacy-oriented 30-second default.
