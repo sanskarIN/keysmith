@@ -11,24 +11,27 @@
   <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-blue"></a>
 </p>
 
-KeySmith is a desktop utility for Windows, macOS, and Linux. Passwords and passphrases are generated locally using the operating system's cryptographically secure random source. The app has no account system, telemetry, password history, or required network access.
+KeySmith is a desktop utility for Windows, macOS, and Linux. Passwords and passphrases are generated locally using the operating system's cryptographically secure random source. The app has no account system, telemetry, password history, cloud sync, or generation-time network requirement.
 
 ## Highlights
 
 - OS-backed CSPRNG through Rust `getrandom`, with rejection sampling to avoid modulo bias.
 - Password policies for length, lowercase, uppercase, digits, symbols, custom symbols, and ambiguous-character exclusion.
+- Custom symbol candidates are validated in Rust and deduplicated so repeated characters do not receive extra probability weight.
 - EFF large Diceware word-list passphrases through the `eff-wordlist` crate.
-- zxcvbn-based strength estimates rather than home-grown password scoring.
-- Batch generation up to 500 items with explicit export safety warnings.
-- Clipboard auto-clear that clears only if the clipboard still contains the copied secret.
+- zxcvbn-based strength estimates for single passwords/passphrases rather than home-grown password scoring.
+- Batch generation up to 500 items with a lightweight secret-only response path that avoids unused per-item zxcvbn work.
+- Explicit plaintext batch export through a bounded Rust command and native operating-system save dialog; the frontend has no generic filesystem-write permission.
+- Clipboard auto-clear with a single replaceable/cancellable schedule that clears only if the clipboard still contains the copied secret.
+- Exact allowlisting for user-initiated GitHub, funding, support, and business links through the operating-system opener.
 - Light, dark, and system themes with keyboard-first accessibility.
 - English-first, internationalization-ready frontend with externalized UI strings and tested fallback behavior.
-- Offline-by-design architecture with restrictive Tauri CSP and least-privilege capabilities.
-- Security, privacy, threat-model, testing, accessibility, release, localization, and architecture documentation.
+- Offline-by-design architecture with restrictive CSP, module-only Tauri API usage, no global Tauri bridge, explicitly enabled least-privilege capabilities, and unused-command stripping.
+- Security, privacy, threat-model, testing, accessibility, release, localization, architecture, and ADR documentation.
 
 ## Screenshots
 
-Real release screenshots will be captured from verified release candidates during Phase 5. Until then, the source UI is in `index.html` and `src/styles.css`; placeholder binary screenshots are intentionally not committed.
+Real release screenshots will be captured from verified packaged release candidates during the final release gate. Placeholder binary screenshots are intentionally not represented as real captures. Until verified screenshots exist, inspect `index.html` and `src/styles.css` for the source UI.
 
 ## Supported platforms
 
@@ -38,19 +41,25 @@ Real release screenshots will be captured from verified release candidates durin
 | macOS | Intel / Apple Silicon | Primary |
 | Linux | Common Tauri desktop targets | Primary |
 
+Release candidates are checked and linted as a Tauri desktop crate on Linux, Windows, and macOS in CI. Packaged-application verification is still required before a stable release is claimed.
+
 ## Tech stack
 
 - Rust 2024 workspace
 - Tauri 2 desktop shell
 - Vanilla TypeScript + Vite frontend
+- `@tauri-apps/api` bundled module API
+- official Tauri dialog plugin for the Rust-owned native save flow
+- official Tauri opener plugin with exact URL/mail scope
 - `getrandom` for OS cryptographic randomness
 - `eff-wordlist` for EFF Diceware words
 - `zxcvbn` for strength estimation
 - `arboard` for clipboard integration
+- `zeroize` for application-owned sensitive buffers where practical
 
 ## Quick start
 
-Prerequisites: current stable Rust, Node.js 22+ recommended, npm, and the platform prerequisites documented by Tauri.
+Prerequisites: current stable Rust, Node.js 22+ recommended, npm, and the platform prerequisites documented in [`docs/setup.md`](docs/setup.md).
 
 ```bash
 git clone https://github.com/sanskarIN/keysmith.git
@@ -59,12 +68,11 @@ npm install
 npm run tauri dev
 ```
 
-For platform-specific dependencies, read [`docs/setup.md`](docs/setup.md).
-
 ## Development
 
 ```bash
 # Frontend and repository checks
+npm audit --audit-level=high
 npm run secret:check
 npm run typecheck
 npm run lint
@@ -72,10 +80,14 @@ npm run format:check
 npm test
 npm run build
 
-# Rust checks
+# Rust core checks
 cargo fmt --all -- --check
-cargo clippy --workspace --all-targets --all-features -- -D warnings
-cargo test --workspace --all-features
+cargo clippy -p keysmith-core --all-targets --all-features -- -D warnings
+cargo test -p keysmith-core --all-features
+
+# Desktop adapter checks for the current platform
+cargo check -p keysmith --all-targets
+cargo clippy -p keysmith --all-targets -- -D warnings
 ```
 
 See [`docs/development.md`](docs/development.md), [`docs/testing.md`](docs/testing.md), [`docs/logging.md`](docs/logging.md), and [`docs/i18n.md`](docs/i18n.md).
@@ -87,21 +99,25 @@ npm install
 npm run tauri build
 ```
 
-The Tauri bundler produces platform-native artifacts. Release signing credentials are never stored in the repository. See [`docs/release.md`](docs/release.md).
+The Tauri bundler produces platform-native artifacts. A stable release additionally requires same-commit CI/CodeQL evidence, verified dependency lockfiles, packaged-app testing on all primary platforms, real screenshots, release-governance checks, and a tag that exactly matches the package version. Release signing credentials are never stored in the repository. See [`docs/release.md`](docs/release.md) and [`docs/verification.md`](docs/verification.md).
 
 ## Architecture
 
-The security-sensitive generation logic lives in `crates/keysmith-core` and has no UI dependency. `src-tauri` exposes a narrow IPC command surface. The TypeScript layer renders the UI, externalizes user-facing copy, and stores only non-secret preferences in local storage. Passwords are never persisted. See [`docs/architecture.md`](docs/architecture.md), [`docs/i18n.md`](docs/i18n.md), and [`docs/adr/`](docs/adr/).
+Security-sensitive generation logic lives in `crates/keysmith-core` and has no UI dependency. `src-tauri` owns narrow native adapters for generation IPC, clipboard handling, batch save, and scoped external opening. The TypeScript layer renders the UI, externalizes user-facing copy, stores only non-secret preferences in local storage, and imports Tauri through its bundled module API. Generated secrets are not intentionally persisted.
+
+See [`docs/architecture.md`](docs/architecture.md), [`docs/i18n.md`](docs/i18n.md), and [`docs/adr/`](docs/adr/).
 
 ## Security and privacy
 
-KeySmith does not log generated secrets, transmit them, or retain a password history. Clipboard use is explicit and optional. Batch exports are plaintext by design and therefore carry a prominent warning. Rust validates security-sensitive generation inputs at the IPC boundary instead of trusting HTML constraints. CI also checks dependency policy, common high-confidence secret patterns, and CodeQL findings.
+KeySmith does not log generated secrets, transmit them to an application server, or retain a password history. Clipboard use is explicit; auto-clear is optional and conditional. Batch exports are plaintext by design, carry a prominent warning, and are written only after the user chooses a destination in the native save dialog. Rust validates security-sensitive IPC inputs instead of trusting HTML constraints.
+
+The main webview does not receive `core:default`, a global Tauri object, generic filesystem-write authority, or arbitrary external URL permission. CI includes dependency audit/policy checks, repository secret scanning, strict TypeScript/Rust linting, cross-platform desktop checks, configuration regression tests, and CodeQL analysis of both the frontend and complete Rust workspace.
 
 Read [`SECURITY.md`](SECURITY.md), [`PRIVACY.md`](PRIVACY.md), [`THREAT_MODEL.md`](THREAT_MODEL.md), and [`docs/logging.md`](docs/logging.md) before making security-sensitive changes.
 
 ## Contributing
 
-Contributions are welcome. Please read [`CONTRIBUTING.md`](CONTRIBUTING.md) and the [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md). Run the relevant quality checks before opening a pull request.
+Contributions are welcome. Please read [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md). Run the relevant quality checks and add regression coverage for behavior changes before opening a pull request.
 
 ## License
 
