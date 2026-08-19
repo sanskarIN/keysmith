@@ -89,7 +89,7 @@
   .settings-card hr { border: 0; border-top: 1px solid var(--line); margin: 1.2rem 0; }
   .trust-list { display: grid; gap: .6rem; color: var(--muted); font-size: .85rem; }
   .trust-list p { margin: 0; display: flex; gap: .5rem; }
-  .trust-list span { color: var(--success); font-weight: 900; }
+  .trust-list > p > span[aria-hidden="true"] { color: var(--success); font-weight: 900; }
   footer { width: min(1120px, calc(100% - 2rem)); margin: 0 auto; border-top: 1px solid var(--line); padding: 1.3rem 0 2rem; display: flex; justify-content: space-between; color: var(--muted); font-size: .8rem; }
   dialog { width: min(480px, calc(100% - 2rem)); border: 0; padding: 0; border-radius: var(--radius-lg); color: var(--text); background: var(--surface); box-shadow: 0 30px 100px rgb(0 0 0 / 35%); }
   dialog::backdrop { background: rgb(7 10 15 / 64%); backdrop-filter: blur(5px); }
