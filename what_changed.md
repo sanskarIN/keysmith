@@ -5,239 +5,338 @@ Current version: `0.1.0`
 Current milestone: Phase 4 / release-candidate verification
 Repository: `sanskarIN/keysmith`
 Primary branch: `main`
+Active verification branch: `docs/full-repository-reference`
+Active pull request: `#11` — `docs: complete repository reference and release-candidate audit`
 Required commit email: `sanskarin@outlook.in`
 
-This file is the canonical continuation ledger for future KeySmith work. Read it before changing the repository.
+This file is the canonical continuation ledger for future KeySmith work. Read it before changing the repository. Do not claim a verification result that was not observed on the relevant commit.
 
-## Scope implemented
+## Current checkpoint
 
-### Repository and architecture
+The repository implementation remains a Rust 2024 + Tauri 2 + Vanilla TypeScript/Vite offline credential generator. This continuation performed a repository-wide source/documentation audit, corrected one CI design defect, expanded automated regression coverage, created complete technical/user/maintainer documentation, and opened PR #11 specifically to exercise PR-triggered CI and CodeQL before `0.1.0` is treated as stable.
 
-- Rust 2024 workspace with a framework-independent `keysmith-core` crate.
-- Tauri 2 desktop adapter and Vanilla TypeScript/Vite presentation layer.
-- Windows, macOS, and Linux bundle configuration.
-- Apache-2.0 license, NOTICE, public/open-source repository metadata, funding link, issue templates, pull-request template, Dependabot, CI, CodeQL, and release workflow.
-- Strict secret-handling boundary: generated credentials are never intentionally persisted by application code.
-- Architecture decisions recorded under `docs/adr/`.
+The documentation completeness requirement is now machine-enforced: `scripts/check-doc-inventory.mjs` obtains every tracked file from `git ls-files` and fails when the path is missing from `docs/repository-reference.md`. The main CI frontend job runs this through `npm run docs:check`.
+
+## Implemented product scope
+
+### Architecture
+
+- Framework-independent `crates/keysmith-core` Rust security/domain crate.
+- Tauri 2 desktop adapter with a narrow command surface.
+- Vanilla TypeScript/Vite presentation layer.
+- Windows, macOS, and Linux native bundle configuration.
+- No runtime application server, database, account service, telemetry pipeline, or required credential-generation network service.
 
 ### Password generation
 
-- Operating-system CSPRNG through `getrandom`.
+- OS cryptographic randomness through `getrandom`.
 - Rejection sampling for unbiased bounded selection.
-- Fisher-Yates-style secure shuffle backed by the same unbiased sampler.
-- Length validation from 4 to 128 characters.
-- Lowercase, uppercase, digit, and symbol controls.
-- Optional custom symbols.
+- Fisher–Yates-style secure shuffle using the same bounded sampler.
+- Length 4–128.
+- Lowercase/uppercase/digit/symbol classes.
+- Optional custom symbol source.
 - Ambiguous-character exclusion.
-- At least one character from every enabled class.
-- Batch generation from 1 to 500 passwords.
-- Balanced, Maximum, Legacy-compatible, and Alphanumeric presets.
+- At least one result character from every enabled class.
+- Batch generation 1–500.
+- Balanced, Maximum, Legacy compatible, and Alphanumeric presets.
 
 ### Passphrases and strength
 
-- EFF large Diceware list through `eff_wordlist`.
-- 3–12 word selection.
-- Separator validation, capitalization, and optional two-digit suffix.
+- EFF large Diceware list packaged through `eff_wordlist`.
+- 3–12 independent word selections.
+- Separator validation (0–3 characters, no control characters).
+- Optional first-letter capitalization.
+- Optional independently selected `00`–`99` suffix.
 - Selection-space entropy estimate.
-- zxcvbn strength scoring and guess estimates.
-- Word-list source and selection model documented in `docs/wordlists.md`.
+- zxcvbn strength/guess estimates.
 
-### Clipboard and exports
+### Clipboard/export
 
-- Explicit clipboard copy command through the Rust desktop adapter.
-- Configurable auto-clear: never, 15 seconds, 30 seconds, 1 minute, or 2 minutes.
-- Auto-clear checks that the clipboard still equals the copied value before erasing it.
+- Explicit native clipboard copy through Rust/arboard.
+- Clipboard delay choices: Never, 15 s, 30 s, 60 s, 120 s.
+- Delayed clear occurs only when clipboard still exactly equals the originally copied value.
+- Direct Rust command defensively caps delayed clear at 300 seconds.
+- Copy command rejects values longer than 4096 characters.
+- Mutable Rust secret buffers are zeroized where practical.
 - Explicit clear-now action.
-- Clipboard command rejects oversized values.
-- Secret buffers handled by the clipboard command are zeroized after use where practical.
-- Batch export is explicit plaintext with an in-product warning and warning header in the exported file.
+- Batch `.txt` export is intentionally plaintext and contains an explicit warning header.
 
-### UI/UX
+### UI/privacy/accessibility
 
-- Responsive desktop layout and reusable design tokens.
-- Password, Passphrase, and Batch tabs.
-- Live strength presentation.
-- Policy presets and safe defaults.
-- Light, dark, and system themes.
-- First-run onboarding with a locally stored non-secret completion flag.
-- Settings surface covering appearance, privacy/data, accessibility, updates, and onboarding help.
-- About surface with version, Apache-2.0, support/business contacts, GitHub, Buy Me a Coffee, and `Made by the Sanskar`.
-- Keyboard tab navigation, skip link, visible focus, semantic fieldsets/labels, aria-live status, reduced-motion support, responsive touch targets, and non-color-only status text.
-- Editable SVG logo plus native PNG/ICO/ICNS application icons.
+- Password, Passphrase, and Batch modes.
+- Responsive desktop UI with light/dark/system themes.
+- First-run onboarding.
+- Settings for appearance/privacy/accessibility/update/onboarding information.
+- About dialog with version, Apache-2.0, project/support links, and `Made by the Sanskar` credit.
+- Skip link, semantic fieldsets/labels, keyboard-operable tabs with Left/Right Arrow behavior, visible focus, live status/output, reduced-motion handling, scalable/responsive controls, and non-color-only status meaning.
+- No account, telemetry, cloud synchronization, password history, or intentional generated-secret persistence.
+- Only non-secret local preference keys:
+  - `keysmith.clipboardClearSeconds`
+  - `keysmith.theme`
+  - `keysmith.onboardingComplete`
 
-### Privacy/security hardening
+## Audit findings and fixes in PR #11
 
-- No account requirement.
-- No telemetry or analytics.
-- No password history.
-- No generation-time network dependency.
-- Restrictive Tauri CSP.
-- Explicit least-privilege Tauri capability and command permissions.
-- Central typed core errors with user-safe messages.
-- Threat model covers assets, trust boundaries, abuse cases, mitigations, and residual risks.
-- `.env.example` contains no credentials.
-- `deny.toml` provides Rust advisory/license/source policy.
-- CodeQL and dependency update automation are configured.
+### CI defect corrected
 
-## Tests added
+The pre-existing standalone `.github/workflows/rust.yml` ran `cargo build --verbose` and `cargo test --verbose` for the entire workspace on `ubuntu-latest` but did not install the native WebKitGTK/AppIndicator dependencies required by the Tauri crate. The primary `ci.yml` desktop job did install those libraries.
 
-### Rust
+The standalone workflow is now intentionally scoped to `keysmith-core` and runs:
 
-- `crates/keysmith-core/tests/security.rs`
-  - required enabled classes are represented,
-  - ambiguous-character exclusion,
-  - batch-size limits,
-  - passphrase word-count behavior.
-- `crates/keysmith-core/tests/properties.rs`
-  - generated length invariant across 4–128 characters,
-  - digits-only output invariant.
+- `cargo fmt --all -- --check`
+- `cargo clippy -p keysmith-core --all-targets --all-features -- -D warnings`
+- `cargo build -p keysmith-core --all-features`
+- `cargo test -p keysmith-core --all-features`
 
-### TypeScript
+Cross-platform Tauri compilation remains the responsibility of the primary CI matrix on Ubuntu 22.04, Windows, and macOS.
 
-- `src/storage.test.ts`
-  - privacy-oriented clipboard default,
-  - supported clipboard duration persistence,
-  - invalid stored duration fallback,
-  - theme persistence,
-  - first-run onboarding state persistence.
+### Validation regression coverage expanded
 
-## Documentation present
+`crates/keysmith-core/tests/security.rs` now directly covers:
 
-- `README.md`
-- `LICENSE`
-- `NOTICE`
+- default generated password contains every enabled class;
+- ambiguity exclusion removes known ambiguous characters;
+- a policy with no enabled character sets is rejected;
+- a custom symbol set that becomes empty after ambiguity filtering is rejected;
+- batch counts 0 and 501 are rejected with `InvalidBatchSize`;
+- requested passphrase word count behavior;
+- passphrase word counts 2 and 13 are rejected;
+- separators longer than three characters are rejected;
+- control-character separators are rejected.
+
+`crates/keysmith-core/tests/properties.rs` continues to cover exact generated length across 4–128 and digits-only output invariants.
+
+`src/storage.test.ts` continues to cover the non-secret local preference model.
+
+### Documentation completeness gate added
+
+New `scripts/check-doc-inventory.mjs`:
+
+1. runs `git ls-files -z`;
+2. sorts all tracked paths;
+3. reads `docs/repository-reference.md`;
+4. fails and prints missing paths when any tracked file is undocumented.
+
+`package.json` exposes this as `npm run docs:check`, and `.github/workflows/ci.yml` runs it in Frontend quality.
+
+## Complete documentation set
+
+### Root/public policy docs
+
+- `README.md` — expanded public landing page and complete docs navigator.
+- `CHANGELOG.md` — records documentation/test/CI hardening for the release candidate.
+- `ROADMAP.md`
 - `CONTRIBUTING.md`
 - `CODE_OF_CONDUCT.md`
 - `SECURITY.md`
-- `SUPPORT.md`
 - `PRIVACY.md`
 - `THREAT_MODEL.md`
-- `CHANGELOG.md`
-- `ROADMAP.md`
+- `SUPPORT.md`
+- `LICENSE`
+- `NOTICE`
 - `what_changed.md`
-- `docs/architecture.md`
-- `docs/setup.md`
-- `docs/development.md`
-- `docs/testing.md`
-- `docs/release.md`
-- `docs/troubleshooting.md`
-- `docs/accessibility.md`
-- `docs/performance.md`
-- `docs/github.md`
-- `docs/wordlists.md`
+
+### Documentation portal and deep references
+
+- `docs/README.md` — documentation portal and synchronization rules.
+- `docs/user-guide.md` — complete product/user behavior and safe-use guide.
+- `docs/architecture.md` — expanded architecture, trust boundaries, data/persistence/network/failure flows.
+- `docs/core-api.md` — Rust core options, API, algorithms, random model, entropy, presets, errors, tests, dependencies.
+- `docs/desktop-bridge.md` — Tauri commands, IPC results, clipboard lifecycle, permissions/capabilities, CSP, bundle/window model.
+- `docs/frontend.md` — startup/state/DOM/type/API/storage/export/theme/tab/dialog/accessibility/frontend testing reference.
+- `docs/setup.md` — expanded common/Windows/macOS/Linux development setup and isolation workflow.
+- `docs/development.md` — expanded secure day-to-day development/change procedures.
+- `docs/testing.md` — expanded automated/static/desktop/dependency/CodeQL/manual smoke/accessibility/release evidence strategy.
+- `docs/release.md` — expanded synchronized versioning, lockfiles, native packaging, signing/notarization, screenshots, tagging, publication, rollback, secret handling.
+- `docs/troubleshooting.md` — expanded layer-by-layer troubleshooting playbook.
+- `docs/accessibility.md` — expanded keyboard/semantics/focus/live region/contrast/scaling/motion/manual checklist.
+- `docs/performance.md` — expanded performance budgets, measurement isolation, benchmarking/regression guidance without weakening security.
+- `docs/github.md` — expanded branch protection/check-name/PR/merge/security/Actions/dependency/release governance.
+- `docs/wordlists.md` — EFF large Diceware provenance and selection model.
+- `docs/maintainer-guide.md` — maintainer change classification, verification, dependency/version, security/docs, release and handoff procedures.
+- `docs/repository-reference.md` — canonical CI-backed file-by-file inventory covering every tracked project file, including hidden configuration, workflows, source, tests, docs, scripts, SVG, PNG, ICO, and ICNS assets.
 - `docs/adr/0001-rust-core-tauri-ui.md`
 - `docs/adr/0002-os-csprng-and-no-secret-storage.md`
-- `.github/RELEASE_TEMPLATE.md`
 
-## GitHub automation present
+## GitHub automation
 
-- `.github/workflows/ci.yml`
-  - frontend typecheck/lint/text-hygiene/tests/build,
-  - Rust core format/clippy/tests,
-  - Tauri `cargo check` on Ubuntu, Windows, and macOS,
-  - cargo-deny dependency policy.
-- `.github/workflows/codeql.yml`
-  - JavaScript/TypeScript and Rust analysis.
-- `.github/workflows/release.yml`
-  - tag-triggered Windows/macOS/Linux draft release builds.
-- `.github/dependabot.yml`
-  - Cargo, npm, and GitHub Actions updates.
-- structured bug/feature issue forms and issue routing.
-- pull-request quality/security checklist.
-- BMC funding configuration.
+### Primary CI — `.github/workflows/ci.yml`
 
-## Verification already performed in the coding environment
+- Frontend quality:
+  - `npm install`
+  - `npm run typecheck`
+  - `npm run lint`
+  - `npm run format:check`
+  - `npm run docs:check`
+  - `npm test`
+  - `npm run build`
+- Rust core quality:
+  - `cargo fmt --all -- --check`
+  - strict core Clippy
+  - core tests
+- Tauri check matrix:
+  - Ubuntu 22.04 (with native Tauri packages)
+  - Windows latest
+  - macOS latest
+- Rust dependency policy through cargo-deny.
 
-- Repository metadata and existing `LICENSE` were inspected before implementation.
-- JSON and TOML files were syntax-parsed locally during construction.
-- TypeScript core/frontend sources prior to the onboarding/settings additions passed a strict local `tsc --noEmit` invocation using the available compiler.
-- Generated native icon files were created and checked as binary assets before being committed.
-- Current Rust APIs for `getrandom`, `eff_wordlist`, and `zxcvbn` were checked against their published Rust documentation while implementing the core.
+### Focused Rust workflow — `.github/workflows/rust.yml`
 
-## Verification still required before calling 0.1.0 stable
+- Core format, strict Clippy, build, and tests only.
 
-The current execution environment does not provide a Rust toolchain and does not provide normal package-registry/network access to the local shell, so a clean local `cargo` build and dependency install could not be truthfully claimed here. GitHub Actions is configured to perform those checks from clean hosted runners.
+### CodeQL — `.github/workflows/codeql.yml`
 
-Do not mark the release stable until all of these are observed green on the same release-candidate commit:
+- JavaScript/TypeScript analysis.
+- Rust analysis with required Linux Tauri system dependencies.
+
+### Release — `.github/workflows/release.yml`
+
+- `v*` tag trigger.
+- Draft Linux, Windows, and universal macOS Tauri artifacts.
+- Does not claim artifacts are signed unless protected signing configuration is separately supplied.
+
+### Other GitHub automation
+
+- Dependabot for Cargo/npm/GitHub Actions.
+- Structured bug and feature forms.
+- PR template.
+- Release template.
+- Funding configuration.
+
+## PR #11 verification state
+
+PR #11 was opened from `docs/full-repository-reference` against `main` at base commit `374dea7e382fac515ad539405e86dd15c5c2422b`.
+
+An earlier PR head `af83c53401b8c81a1135f415cedb7b285440cfb4` successfully caused all three expected workflow suites to appear:
+
+- `CI`
+- `Rust core`
+- `CodeQL`
+
+Observed while those runs were active:
+
+- CodeQL JavaScript/TypeScript checkout/init/autobuild completed successfully and analysis had started.
+- CodeQL Rust checkout completed and Linux native dependency installation had started.
+- Primary CI exposed all expected jobs: Frontend quality, Rust core quality, Tauri checks for Ubuntu/Windows/macOS, and Rust dependency policy.
+- Ubuntu Tauri job checkout/Node/Rust/cache setup succeeded and native dependency installation had started.
+
+Those observations are **not** a final pass claim because later documentation-inventory commits changed the PR head. The current/final PR head after this ledger commit must receive a fresh authoritative run. Inspect that run before merging or tagging.
+
+## Verification required before `0.1.0` stable
+
+Do not call `0.1.0` stable until the same release-candidate commit has observed successful results for:
 
 1. `npm run typecheck`
 2. `npm run lint`
 3. `npm run format:check`
-4. `npm test`
-5. `npm run build`
-6. `cargo fmt --all -- --check`
-7. `cargo clippy -p keysmith-core --all-targets --all-features -- -D warnings`
-8. `cargo test -p keysmith-core --all-features`
-9. `cargo check -p keysmith --all-targets` on Windows, macOS, and Linux
-10. cargo-deny policy
-11. CodeQL analysis
-12. `npm run tauri build` on release platforms
-13. manual smoke testing of generated installers/apps
-14. keyboard/accessibility manual review
-15. real release screenshots captured from the verified build
+4. `npm run docs:check`
+5. `npm test`
+6. `npm run build`
+7. `cargo fmt --all -- --check`
+8. strict `keysmith-core` Clippy
+9. `cargo test -p keysmith-core --all-features`
+10. focused core build workflow
+11. Tauri `cargo check` on Ubuntu/Linux
+12. Tauri `cargo check` on Windows
+13. Tauri `cargo check` on macOS
+14. cargo-deny dependency policy
+15. CodeQL JavaScript/TypeScript
+16. CodeQL Rust
+17. `npm run tauri build` release artifacts on supported platforms
+18. packaged-app smoke tests
+19. clipboard conditional-clear manual checks
+20. keyboard/accessibility manual review
+21. real screenshots captured from the verified release candidate
 
-## Known limitations / non-blocking design decisions
+The connected environment cannot replace native packaged-app manual testing with source inspection. Do not mark those manual gates complete until actually performed.
 
-- No password history or vault is implemented by design; KeySmith is a generator, not a password manager.
-- No cloud synchronization or telemetry is planned.
-- Batch exports are plaintext by design and intentionally warn the user.
-- Clipboard security depends on the operating system; other processes or clipboard managers can observe clipboard contents before a clear operation.
-- No silent automatic update check is implemented because the app is offline by default. Releases are distributed through the repository release process.
-- Lockfiles could not be generated in the local shell without package-registry access; the clean CI jobs are the next authoritative dependency-resolution check. Commit lockfiles once generated from a trusted clean build.
-- Real screenshots are intentionally deferred until the UI can be launched from a verified release candidate; the README does not pretend placeholders are real captures.
-- Branch protection is not enabled yet. `docs/github.md` describes the recommended rule set to enable after the first green CI run establishes valid required-check names.
+## Lockfiles / reproducibility
+
+`package-lock.json` and `Cargo.lock` are still intentionally absent from the repository at this checkpoint. Earlier local construction did not have a trusted package-registry/network path for authoritative generation.
+
+Before a stable application release:
+
+- generate lockfiles using the real npm/Cargo tools in a trusted clean dependency-resolution environment;
+- inspect the resolved graphs;
+- commit suitable application lockfiles;
+- update CI/release install commands for reproducible resolution where appropriate;
+- add the new tracked lockfiles to `docs/repository-reference.md`;
+- rerun the full candidate matrix.
+
+Never hand-author dependency lockfiles.
+
+## Known limitations / intentional non-goals
+
+- KeySmith is a generator, not a password manager; there is no credential vault/history.
+- No cloud synchronization, account system, telemetry, or analytics.
+- Runtime credential generation is offline by design.
+- Batch exports are plaintext and intentionally warned.
+- OS clipboard managers/other processes can observe or retain clipboard data outside KeySmith's control.
+- No silent background update checker.
+- Release signing/notarization is not configured/claimed by the current source workflow.
+- Real release screenshots remain deferred until a verified packaged build exists.
+- Branch protection is not yet enabled; `docs/github.md` requires configuring it from observed check names after the first fully green verification PR.
 
 ## Next exact tasks
 
-1. Create a verification branch from the current `main` commit and open a pull request so PR-triggered CI can be inspected through the connected GitHub tooling.
-2. Read every failed CI job log, fix the root cause, and add a regression test when behavior is affected.
-3. Repeat until the full PR quality matrix and CodeQL are green.
-4. Commit generated `Cargo.lock` and `package-lock.json` from the clean verified dependency resolution if the CI/tooling produces suitable lockfiles.
-5. Run/package Tauri release builds on Windows, macOS, and Linux.
-6. Smoke-test generation, passphrases, batch export, clipboard auto-clear, onboarding, settings, themes, and About links from packaged apps.
-7. Capture real screenshots and replace the README screenshot note.
-8. Enable `main` branch protection using the proven check names.
-9. Set the `0.1.0` release date in `CHANGELOG.md`, update this ledger, tag `v0.1.0`, and let the release workflow create the draft artifacts.
+1. Inspect PR #11's latest-head `CI`, `Rust core`, and `CodeQL` runs.
+2. For every failure, inspect the failed job steps/logs and fix the root cause on the same branch; add regression coverage for behavioral defects.
+3. Repeat until the latest PR head is green across frontend, core, three-platform Tauri, cargo-deny, focused Rust, and both CodeQL languages.
+4. Resolve/generate/review/commit `package-lock.json` and `Cargo.lock` from a trusted clean dependency resolution; update the inventory and use reproducible install commands where appropriate.
+5. Build packaged Tauri release candidates on Windows, macOS, and Linux.
+6. Perform the detailed smoke/clipboard/accessibility cases from `docs/testing.md` on actual packaged apps.
+7. Capture real release screenshots using disposable generated values and no personal desktop secrets.
+8. Enable `main` branch protection using the proven GitHub check names from the green PR.
+9. Finalize the `0.1.0` changelog date/release notes.
+10. Tag the exact verified commit as `v0.1.0` and inspect the draft release artifacts before publication.
 
 ## Migration notes
 
-There is no credential database and therefore no secret-data migration. Non-secret local preferences currently use these keys:
+There is no credential database and therefore no secret-data migration.
 
-- `keysmith.clipboardClearSeconds`
-- `keysmith.theme`
-- `keysmith.onboardingComplete`
+Current non-secret preference schema:
 
-Future preference schema changes must preserve safe defaults and must never turn this storage into a secret history.
+- `keysmith.clipboardClearSeconds` — allowed values `0`, `15`, `30`, `60`, `120`; invalid stored values fall back to `30`.
+- `keysmith.theme` — `system`, `light`, or `dark`; invalid/missing values fall back to `system`.
+- `keysmith.onboardingComplete` — `true` means first-run onboarding has been completed.
+
+Future preference changes must preserve safe fallbacks and must never turn local preference storage into a generated-secret history.
 
 ## Release notes draft — 0.1.0
 
-KeySmith 0.1.0 introduces an offline-first desktop password and passphrase generator with OS-backed cryptographic randomness, EFF Diceware passphrases, zxcvbn strength estimates, policy presets, batch generation, guarded plaintext export, conditional clipboard auto-clear, first-run onboarding, complete privacy/accessibility/settings surfaces, cross-platform Tauri packaging configuration, security documentation, and automated quality/security workflows.
+KeySmith 0.1.0 is an offline-first desktop password/passphrase generator using operating-system cryptographic randomness, unbiased bounded selection, secure shuffling, EFF large Diceware passphrases, zxcvbn strength estimates, policy presets, batch generation, explicit warned plaintext export, conditional clipboard auto-clear, onboarding/settings/themes/accessibility surfaces, least-privilege Tauri permissions/CSP, cross-platform build automation, security/dependency analysis, and comprehensive user/technical/maintainer documentation.
 
-No account, telemetry, cloud sync, or password-history service is included.
+The release candidate also adds direct validation regression coverage and CI-enforced file-by-file documentation completeness.
 
-## Recent meaningful commits
+No account, telemetry, cloud sync, remote generation, or password-history service is included.
 
-- `c62ac0c` — `feat: add native platform application icons`
-- `02131d5e` — `test: cover onboarding preference state`
-- `c64aba7e` — `feat: wire onboarding and settings behavior`
-- `d9687efa` — `feat: add onboarding and complete settings surfaces`
-- `629640f9` — `feat: persist first-run onboarding state`
-- `c1352a11` — `docs: add release notes template`
-- `3846bc7a` — `docs: document passphrase word-list source`
-- `d18d2455` — `docs: add GitHub governance guidance`
-- `862c2290` — `build: make format gate deterministic in CI`
-- `eedb7856` — `build: add deterministic text format check`
-- `82afd3bd` — `fix: correct Tauri environment prefix matching`
-- `eee83872` — `fix: keep preset serialization output-only`
-- `ccc0529c` — `fix: avoid unnecessary static deserialization`
-- `767e9653` — `build: keep strict clippy gate actionable`
-- `00cc46c7` — `ci: add multi-platform quality pipeline`
-- `06b220f5` — `ci: add CodeQL security analysis`
-- `686f7558` — `ci: add cross-platform release workflow`
-- `a6657ba0` — `feat: implement cryptographically secure password generation`
-- `7b69f047` — `feat: add EFF wordlist passphrase generation`
-- `7777fbe6` — `feat: add zxcvbn password strength estimates`
+## Commits in the current documentation/audit continuation
+
+- `0cdab1fe` — `ci: scope standalone Rust workflow to core crate`
+- `c47e1de8` — `docs: add documentation portal`
+- `25ad959d` — `docs: add complete user guide`
+- `cdb3154d` — `docs: document Rust core API contracts`
+- `b049cc35` — `docs: document Tauri desktop bridge`
+- `54c3c7c1` — `docs: document frontend architecture and state`
+- `eb7e2d31` — `docs: add maintainer operations guide`
+- `7ef2d1dd` — `docs: catalog every repository file`
+- `5ebd854d` — `docs: deepen architecture and trust boundary guide`
+- `0ae877c2` — `docs: expand development workflow`
+- `37e6c529` — `docs: expand verification and regression strategy`
+- `07c23d56` — `docs: expand cross-platform release process`
+- `52948dc3` — `docs: expand platform setup guide`
+- `533d4674` — `docs: expand troubleshooting playbook`
+- `6fc26f55` — `docs: expand accessibility requirements and checks`
+- `a420e11d` — `docs: expand performance budgets and measurement`
+- `aa11a29b` — `docs: expand GitHub governance and automation guide`
+- `ddf26348` — `test: cover core validation edge cases`
+- `be4e2cf1` — `docs: link complete repository documentation`
+- `af83c534` — `docs: record documentation and CI hardening`
+- `ea72e987` — `build: add repository documentation inventory check`
+- `6725e441` — `build: expose documentation completeness check`
+- `568a7f8f` — `ci: enforce repository documentation completeness`
+- `ae484c21` — `docs: include documentation inventory tooling`
 
 ## Commit identity
 
-GitHub commits created during this implementation are attributed to `Sanskar <sanskarin@outlook.in>` by the connected repository identity. Continue using that email for project-maintainer commits.
+GitHub commits created through the connected repository identity are attributed to `Sanskar <sanskarin@outlook.in>`. Continue using that email for project-maintainer commits.
