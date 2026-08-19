@@ -5,6 +5,10 @@ on:
     branches: [main]
   pull_request:
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -17,12 +21,31 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm install
-      - run: npm run typecheck
-      - run: npm run lint
-      - run: npm run format:check
-      - run: npm test
-      - run: npm run build
+      - name: Resolve frontend dependencies
+        run: npm install
+      - name: Audit frontend dependencies
+        run: npm audit --audit-level=high
+      - name: Scan repository for secrets
+        run: npm run secret:check
+      - name: Typecheck frontend
+        run: npm run typecheck
+      - name: Lint frontend
+        run: npm run lint
+      - name: Check repository text hygiene
+        run: npm run format:check
+      - name: Check documentation inventory
+        run: npm run docs:check
+      - name: Test frontend
+        run: npm test
+      - name: Build frontend
+        run: npm run build
+      - name: Publish npm lockfile
+        uses: actions/upload-artifact@v4
+        with:
+          name: keysmith-package-lock
+          path: package-lock.json
+          if-no-files-found: error
+          retention-days: 1
 
   rust-core:
     name: Rust core quality
@@ -33,12 +56,27 @@ jobs:
         with:
           components: rustfmt, clippy
       - uses: Swatinem/rust-cache@v2
-      - run: cargo fmt --all -- --check
-      - run: cargo clippy -p keysmith-core --all-targets --all-features -- -D warnings
-      - run: cargo test -p keysmith-core --all-features
+      - name: Check Rust formatting
+        run: cargo fmt --all -- --check
+      - name: Lint Rust core
+        run: cargo clippy -p keysmith-core --all-targets --all-features -- -D warnings
+      - name: Test Rust core
+        run: cargo test -p keysmith-core --all-features
+      - name: Generate Rust lockfile
+        run: cargo generate-lockfile
+      - name: Check Rust dependency policy
+        uses: EmbarkStudios/cargo-deny-action@v2
+      - name: Publish Cargo lockfile
+        uses: actions/upload-artifact@v4
+        with:
+          name: keysmith-cargo-lock
+          path: Cargo.lock
+          if-no-files-found: error
+          retention-days: 1
 
   desktop-check:
     name: Tauri check (${{ matrix.os }})
+    needs: [frontend, rust-core]
     strategy:
       fail-fast: false
       matrix:
@@ -50,20 +88,16 @@ jobs:
         with:
           node-version: 22
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
       - uses: Swatinem/rust-cache@v2
-      - name: Install Linux dependencies
+      - name: Install Tauri Linux dependencies
         if: matrix.os == 'ubuntu-22.04'
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
       - run: npm install
-      - run: cargo check -p keysmith --all-targets
-
-  dependency-policy:
-    name: Rust dependency policy
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - run: cargo generate-lockfile
-      - uses: EmbarkStudios/cargo-deny-action@v2
+      - name: Check Tauri desktop crate
+        run: cargo check -p keysmith --all-targets
+      - name: Lint Tauri desktop crate
+        run: cargo clippy -p keysmith --all-targets -- -D warnings

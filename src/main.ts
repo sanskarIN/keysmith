@@ -1,6 +1,12 @@
 import "./styles.css";
 import { api } from "./api";
-import { en } from "./i18n/en";
+import { buildBatchExport } from "./export";
+import { openTrustedExternalUrl } from "./external-links";
+import { applyTranslations } from "./i18n";
+import { en, enFormat } from "./i18n/en";
+import { localizedPresetCopy } from "./i18n/presets";
+import { localizedStrengthLabel } from "./i18n/strength";
+import { customSymbolsFromInput } from "./policy-input";
 import {
   completeOnboarding,
   getClipboardClearSeconds,
@@ -10,6 +16,7 @@ import {
   setThemePreference,
 } from "./storage";
 import type {
+  BatchSecretResult,
   GeneratorMode,
   PassphraseOptions,
   PasswordOptions,
@@ -68,11 +75,11 @@ const ui = {
 
 let mode: GeneratorMode = "password";
 let currentSecret = "";
-let batch: SecretResult[] = [];
+let batch: BatchSecretResult[] = [];
 let presets: PasswordPreset[] = [];
+let generationRevision = 0;
 
 function passwordOptions(): PasswordOptions {
-  const symbols = ui.customSymbols.value.trim();
   return {
     length: Number(ui.length.value),
     lowercase: ui.lowercase.checked,
@@ -80,7 +87,7 @@ function passwordOptions(): PasswordOptions {
     digits: ui.digits.checked,
     symbols: ui.symbols.checked,
     excludeAmbiguous: ui.ambiguous.checked,
-    customSymbols: symbols.length > 0 ? symbols : null,
+    customSymbols: customSymbolsFromInput(ui.customSymbols.value),
   };
 }
 
@@ -95,7 +102,7 @@ function passphraseOptions(): PassphraseOptions {
 
 function setBusy(busy: boolean): void {
   ui.generate.disabled = busy;
-  ui.generate.textContent = busy ? "Generating…" : "Generate";
+  ui.generate.textContent = busy ? en.generating : en.generate;
 }
 
 function setStatus(message: string, error = false): void {
@@ -104,7 +111,7 @@ function setStatus(message: string, error = false): void {
 }
 
 function renderStrength(result: SecretResult): void {
-  ui.strengthLabel.textContent = result.strength.label;
+  ui.strengthLabel.textContent = localizedStrengthLabel(result.strength.score, result.strength.label);
   ui.strengthScore.textContent = `${result.strength.score}/4`;
   ui.strengthScore.dataset.score = String(result.strength.score);
 }
@@ -120,31 +127,42 @@ function renderSecret(result: SecretResult): void {
 function resetOutput(): void {
   currentSecret = "";
   batch = [];
-  ui.output.textContent = "Select Generate to begin";
+  ui.output.textContent = en.outputPlaceholder;
   ui.output.classList.remove("has-secret", "batch-output");
   ui.copy.disabled = true;
   ui.copyBatch.disabled = true;
   ui.exportBatch.disabled = true;
-  ui.strengthLabel.textContent = "Ready";
+  ui.strengthLabel.textContent = en.ready;
   ui.strengthScore.textContent = "";
 }
 
+function generationIsCurrent(revision: number, requestMode: GeneratorMode): boolean {
+  return revision === generationRevision && requestMode === mode;
+}
+
 async function generate(): Promise<void> {
+  const revision = ++generationRevision;
+  const requestMode = mode;
   setBusy(true);
   setStatus("");
   try {
-    if (mode === "password") {
-      renderSecret(await api.generatePassword(passwordOptions()));
-    } else if (mode === "passphrase") {
+    if (requestMode === "password") {
+      const result = await api.generatePassword(passwordOptions());
+      if (!generationIsCurrent(revision, requestMode)) return;
+      renderSecret(result);
+    } else if (requestMode === "passphrase") {
       const result = await api.generatePassphrase(passphraseOptions());
+      if (!generationIsCurrent(revision, requestMode)) return;
       renderSecret(result);
       setStatus(
-        `${en.generated} Estimated selection entropy: ${result.estimatedEntropyBits.toFixed(1)} bits.`,
+        `${en.generated} ${en.estimatedEntropy}: ${result.estimatedEntropyBits.toFixed(1)} bits.`,
       );
       return;
     } else {
       const count = Number(ui.batchCount.value);
-      batch = await api.generateBatch(passwordOptions(), count);
+      const result = await api.generateBatch(passwordOptions(), count);
+      if (!generationIsCurrent(revision, requestMode)) return;
+      batch = result;
       currentSecret = "";
       ui.output.textContent = batch
         .map((item, index) => `${index + 1}. ${item.secret}`)
@@ -153,25 +171,29 @@ async function generate(): Promise<void> {
       ui.copy.disabled = true;
       ui.copyBatch.disabled = false;
       ui.exportBatch.disabled = false;
-      ui.strengthLabel.textContent = `${batch.length} generated`;
+      ui.strengthLabel.textContent = enFormat.batchGenerated(batch.length);
       ui.strengthScore.textContent = "";
     }
     setStatus(en.generated);
   } catch (error) {
+    if (!generationIsCurrent(revision, requestMode)) return;
     const message = error instanceof Error ? error.message : String(error);
     setStatus(`${en.generationFailed} ${message}`, true);
   } finally {
-    setBusy(false);
+    if (revision === generationRevision) setBusy(false);
   }
 }
 
 async function copyText(value: string): Promise<void> {
   if (!value) return;
+  const revision = generationRevision;
   try {
     await api.copySecret(value, Number(ui.clipboardTime.value));
-    setStatus(en.copied);
+    if (revision === generationRevision) setStatus(en.copied);
   } catch (error) {
-    setStatus(`Clipboard action failed: ${String(error)}`, true);
+    if (revision === generationRevision) {
+      setStatus(`${en.clipboardActionFailed} ${String(error)}`, true);
+    }
   }
 }
 
@@ -180,40 +202,60 @@ async function clearClipboard(): Promise<void> {
     await api.clearClipboard();
     setStatus(en.clipboardCleared);
   } catch (error) {
-    setStatus(`Clipboard action failed: ${String(error)}`, true);
+    setStatus(`${en.clipboardActionFailed} ${String(error)}`, true);
   }
 }
 
-function exportBatch(): void {
+async function openExternalLink(url: string): Promise<void> {
+  try {
+    await openTrustedExternalUrl(url);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    setStatus(`${en.externalLinkFailed} ${message}`, true);
+  }
+}
+
+async function exportBatch(): Promise<void> {
   if (batch.length === 0) return;
-  const content = [
-    "# KeySmith batch export",
-    `# Created: ${new Date().toISOString()}`,
-    `# WARNING: ${en.batchExportWarning}`,
-    "",
-    ...batch.map((item) => item.secret),
-    "",
-  ].join("\n");
-  const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = `keysmith-batch-${new Date().toISOString().slice(0, 10)}.txt`;
-  anchor.click();
-  URL.revokeObjectURL(url);
-  setStatus(en.batchExportWarning);
+  const revision = generationRevision;
+  const content = buildBatchExport(
+    batch.map((item) => item.secret),
+    new Date(),
+    en.batchExportWarning,
+  );
+  ui.exportBatch.disabled = true;
+  try {
+    const saved = await api.exportBatch(content);
+    if (revision !== generationRevision || mode !== "batch") return;
+    setStatus(saved ? en.batchExportSaved : en.batchExportCancelled);
+  } catch (error) {
+    if (revision !== generationRevision || mode !== "batch") return;
+    const message = error instanceof Error ? error.message : String(error);
+    setStatus(`${en.batchExportFailed} ${message}`, true);
+  } finally {
+    if (revision === generationRevision && mode === "batch") {
+      ui.exportBatch.disabled = batch.length === 0;
+    }
+  }
+}
+
+function setPanelVisibility(panel: HTMLElement, visible: boolean): void {
+  panel.hidden = !visible;
+  panel.classList.toggle("hidden", !visible);
 }
 
 function switchMode(next: GeneratorMode): void {
+  generationRevision += 1;
+  setBusy(false);
   mode = next;
   document.querySelectorAll<HTMLButtonElement>("[data-mode]").forEach((tab) => {
     const selected = tab.dataset.mode === next;
     tab.setAttribute("aria-selected", String(selected));
     tab.tabIndex = selected ? 0 : -1;
   });
-  ui.passwordControls.classList.toggle("hidden", next !== "password");
-  ui.passphraseControls.classList.toggle("hidden", next !== "passphrase");
-  ui.batchControls.classList.toggle("hidden", next !== "batch");
+  setPanelVisibility(ui.passwordControls, next === "password");
+  setPanelVisibility(ui.passphraseControls, next === "passphrase");
+  setPanelVisibility(ui.batchControls, next === "batch");
   resetOutput();
 }
 
@@ -226,7 +268,7 @@ function applyPreset(preset: PasswordPreset): void {
   ui.symbols.checked = preset.options.symbols;
   ui.ambiguous.checked = preset.options.excludeAmbiguous;
   ui.customSymbols.value = preset.options.customSymbols ?? "";
-  ui.presetDescription.textContent = preset.description;
+  ui.presetDescription.textContent = localizedPresetCopy(preset).description;
 }
 
 function resolvedTheme(preference: ThemePreference): "light" | "dark" {
@@ -237,7 +279,7 @@ function resolvedTheme(preference: ThemePreference): "light" | "dark" {
 function applyTheme(preference: ThemePreference): void {
   document.documentElement.dataset.theme = resolvedTheme(preference);
   document.documentElement.dataset.themePreference = preference;
-  ui.theme.title = `Theme: ${preference}`;
+  ui.theme.title = enFormat.themeTitle(preference);
   ui.settingsTheme.value = preference;
 }
 
@@ -259,12 +301,13 @@ async function loadPresets(): Promise<void> {
     presets = await api.presets();
     for (const preset of presets) {
       const option = document.createElement("option");
+      const copy = localizedPresetCopy(preset);
       option.value = preset.id;
-      option.textContent = preset.name;
+      option.textContent = copy.name;
       ui.preset.append(option);
     }
   } catch (error) {
-    setStatus(`Could not load presets: ${String(error)}`, true);
+    setStatus(`${en.presetLoadFailed} ${String(error)}`, true);
   }
 }
 
@@ -283,10 +326,16 @@ function bindEvents(): void {
       }
     });
   });
+  document.querySelectorAll<HTMLButtonElement>("[data-external-url]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const url = button.dataset.externalUrl;
+      if (url) void openExternalLink(url);
+    });
+  });
   ui.generate.addEventListener("click", () => void generate());
   ui.copy.addEventListener("click", () => void copyText(currentSecret));
   ui.copyBatch.addEventListener("click", () => void copyText(batch.map((item) => item.secret).join("\n")));
-  ui.exportBatch.addEventListener("click", exportBatch);
+  ui.exportBatch.addEventListener("click", () => void exportBatch());
   ui.clearClipboard.addEventListener("click", () => void clearClipboard());
   ui.settingsClearClipboard.addEventListener("click", () => void clearClipboard());
   ui.length.addEventListener("input", () => {
@@ -301,7 +350,7 @@ function bindEvents(): void {
     if (preset) {
       applyPreset(preset);
     } else {
-      ui.presetDescription.textContent = "Choose a preset or tune the controls yourself.";
+      ui.presetDescription.textContent = en.presetHint;
     }
   });
   ui.clipboardTime.addEventListener("change", () =>
@@ -327,6 +376,7 @@ function bindEvents(): void {
 }
 
 async function init(): Promise<void> {
+  applyTranslations();
   applyTheme(getThemePreference());
   ui.clipboardTime.value = String(getClipboardClearSeconds());
   bindEvents();

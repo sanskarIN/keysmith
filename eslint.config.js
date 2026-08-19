@@ -11,5 +11,11 @@ export default tseslint.config(
     files: ["src/**/*.ts", "vite.config.ts"],
     rules: { "@typescript-eslint/no-floating-promises": "error" },
   },
+  {
+    files: ["scripts/**/*.mjs"],
+    languageOptions: {
+      globals: { console: "readonly", process: "readonly" },
+    },
+  },
   { ignores: ["dist", "node_modules", "src-tauri/target"] },
 );

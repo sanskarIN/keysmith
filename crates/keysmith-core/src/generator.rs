@@ -1,4 +1,5 @@
-use crate::{random, KeySmithError, PasswordOptions};
+use crate::{KeySmithError, PasswordOptions, random};
+use zeroize::Zeroize;
 
 const LOWERCASE: &str = "abcdefghijklmnopqrstuvwxyz";
 const UPPERCASE: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -7,12 +8,28 @@ const SYMBOLS: &str = "!@#$%^&*()-_=+[]{};:,.?/";
 const AMBIGUOUS: &str = "Il1O0o|`'\"";
 const MIN_LENGTH: usize = 4;
 const MAX_LENGTH: usize = 128;
+const MAX_CUSTOM_SYMBOLS: usize = 40;
 
 fn filtered_chars(source: &str, exclude_ambiguous: bool) -> Vec<char> {
-    source
+    let mut filtered = Vec::new();
+    for character in source
         .chars()
         .filter(|character| !exclude_ambiguous || !AMBIGUOUS.contains(*character))
-        .collect()
+    {
+        if !filtered.contains(&character) {
+            filtered.push(character);
+        }
+    }
+    filtered
+}
+
+fn validate_custom_symbols(symbols: &str) -> Result<(), KeySmithError> {
+    if symbols.chars().count() > MAX_CUSTOM_SYMBOLS
+        || symbols.chars().any(|character| !character.is_ascii_punctuation())
+    {
+        return Err(KeySmithError::InvalidCustomSymbols);
+    }
+    Ok(())
 }
 
 fn pick(chars: &[char]) -> Result<char, KeySmithError> {
@@ -29,6 +46,14 @@ pub fn generate_password(options: &PasswordOptions) -> Result<String, KeySmithEr
             min: MIN_LENGTH,
             max: MAX_LENGTH,
         });
+    }
+
+    if let Some(symbols) = options
+        .custom_symbols
+        .as_deref()
+        .filter(|_| options.symbols)
+    {
+        validate_custom_symbols(symbols)?;
     }
 
     let symbol_source = options
@@ -78,7 +103,9 @@ pub fn generate_password(options: &PasswordOptions) -> Result<String, KeySmithEr
     }
 
     random::secure_shuffle(&mut password)?;
-    Ok(password.into_iter().collect())
+    let secret: String = password.iter().copied().collect();
+    password.zeroize();
+    Ok(secret)
 }
 
 pub fn generate_batch(
@@ -89,4 +116,19 @@ pub fn generate_batch(
         return Err(KeySmithError::InvalidBatchSize);
     }
     (0..count).map(|_| generate_password(options)).collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::filtered_chars;
+
+    #[test]
+    fn candidate_filter_treats_repeated_symbols_as_one_choice() {
+        assert_eq!(filtered_chars("!!@@##", false), vec!['!', '@', '#']);
+    }
+
+    #[test]
+    fn candidate_filter_deduplicates_after_ambiguity_removal() {
+        assert_eq!(filtered_chars("||!!@@", true), vec!['!', '@']);
+    }
 }

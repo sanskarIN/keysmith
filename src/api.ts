@@ -1,4 +1,6 @@
+import { invoke as tauriInvoke, isTauri } from "@tauri-apps/api/core";
 import type {
+  BatchSecretResult,
   PassphraseOptions,
   PassphraseResult,
   PasswordOptions,
@@ -7,12 +9,12 @@ import type {
 } from "./types";
 
 function invoke<T>(command: string, args?: Record<string, unknown>): Promise<T> {
-  if (!window.__TAURI__?.core?.invoke) {
+  if (!isTauri()) {
     return Promise.reject(
       new Error("KeySmith desktop bridge is unavailable. Run the app through Tauri."),
     );
   }
-  return window.__TAURI__.core.invoke<T>(command, args);
+  return tauriInvoke<T>(command, args);
 }
 
 export const api = {
@@ -22,7 +24,7 @@ export const api = {
   generatePassphrase(options: PassphraseOptions): Promise<PassphraseResult> {
     return invoke("generate_passphrase_command", { options });
   },
-  generateBatch(options: PasswordOptions, count: number): Promise<SecretResult[]> {
+  generateBatch(options: PasswordOptions, count: number): Promise<BatchSecretResult[]> {
     return invoke("generate_batch_command", { options, count });
   },
   presets(): Promise<PasswordPreset[]> {
@@ -33,5 +35,8 @@ export const api = {
   },
   clearClipboard(): Promise<void> {
     return invoke("clear_clipboard_command");
+  },
+  exportBatch(content: string): Promise<boolean> {
+    return invoke("export_batch_command", { content });
   },
 };

@@ -12,3 +12,8 @@ commands.allow = [
 identifier = "keysmith-clipboard"
 description = "Allows explicit clipboard copy and clear actions."
 commands.allow = ["copy_secret_command", "clear_clipboard_command"]
+
+[[permission]]
+identifier = "keysmith-export"
+description = "Allows an explicit native save dialog for a bounded plaintext batch export."
+commands.allow = ["export_batch_command"]

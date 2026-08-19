@@ -27,6 +27,10 @@ export interface SecretResult {
   strength: StrengthEstimate;
 }
 
+export interface BatchSecretResult {
+  secret: string;
+}
+
 export interface PassphraseResult extends SecretResult {
   estimatedEntropyBits: number;
 }

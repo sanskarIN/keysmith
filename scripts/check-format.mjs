@@ -8,6 +8,7 @@ const TEXT_EXTENSIONS = new Set([
   ".html",
   ".js",
   ".json",
+  ".lock",
   ".md",
   ".mjs",
   ".rs",
@@ -18,7 +19,14 @@ const TEXT_EXTENSIONS = new Set([
   ".yml",
   ".yaml",
 ]);
-const TEXT_NAMES = new Set([".editorconfig", ".gitattributes", ".gitignore", "LICENSE", "NOTICE"]);
+const TEXT_NAMES = new Set([
+  ".editorconfig",
+  ".env.example",
+  ".gitattributes",
+  ".gitignore",
+  "LICENSE",
+  "NOTICE",
+]);
 
 async function collect(directory) {
   const entries = await readdir(directory, { withFileTypes: true });

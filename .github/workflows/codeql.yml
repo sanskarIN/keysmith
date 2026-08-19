@@ -7,20 +7,26 @@ on:
   schedule:
     - cron: "17 4 * * 1"
 
+concurrency:
+  group: codeql-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
   security-events: write
 
 jobs:
   analyze:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         language: [javascript-typescript, rust]
     steps:
       - uses: actions/checkout@v4
-      - name: Install Linux dependencies for Rust analysis
+      - uses: dtolnay/rust-toolchain@stable
+        if: matrix.language == 'rust'
+      - name: Install Tauri Linux dependencies
         if: matrix.language == 'rust'
         run: |
           sudo apt-get update
@@ -28,5 +34,7 @@ jobs:
       - uses: github/codeql-action/init@v3
         with:
           languages: ${{ matrix.language }}
-      - uses: github/codeql-action/autobuild@v3
+      - name: Build complete Rust workspace for analysis
+        if: matrix.language == 'rust'
+        run: cargo build --workspace --all-targets --all-features
       - uses: github/codeql-action/analyze@v3

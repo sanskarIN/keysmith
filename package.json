@@ -7,11 +7,17 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint src vite.config.ts",
+    "lint": "eslint src scripts vite.config.ts",
     "format": "prettier --write .",
     "format:check": "node scripts/check-format.mjs",
+    "docs:check": "node scripts/check-doc-inventory.mjs",
+    "secret:check": "node scripts/check-secrets.mjs",
     "test": "vitest run",
     "tauri": "tauri"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-opener": "^2"
   },
   "devDependencies": {
     "@eslint/js": "^9",

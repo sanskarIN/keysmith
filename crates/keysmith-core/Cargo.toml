@@ -8,14 +8,16 @@ repository.workspace = true
 description = "Security-focused offline password and passphrase generation core for KeySmith"
 
 [dependencies]
-eff_wordlist = "1.0.3"
+eff-wordlist = "1.0.3"
 getrandom = "0.4"
 serde = { version = "1", features = ["derive"] }
 thiserror = "2"
+zeroize = "1"
 zxcvbn = "3.1.1"
 
 [dev-dependencies]
 proptest = "1"
+serde_json = "1"
 
 [lints]
 workspace = true
