@@ -26,6 +26,13 @@ describe("local non-secret settings", () => {
     expect(getClipboardClearSeconds()).toBe(30);
   });
 
+  it("rejects malformed stored clipboard durations instead of partially parsing them", () => {
+    for (const value of ["30seconds", "30.5", "0x1e", "", "NaN", "Infinity"]) {
+      localStorage.setItem("keysmith.clipboardClearSeconds", value);
+      expect(getClipboardClearSeconds()).toBe(30);
+    }
+  });
+
   it("normalizes unsupported clipboard duration writes", () => {
     setClipboardClearSeconds(999);
     expect(localStorage.getItem("keysmith.clipboardClearSeconds")).toBe("30");
