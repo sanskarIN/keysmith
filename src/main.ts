@@ -79,7 +79,7 @@ let presets: PasswordPreset[] = [];
 let generationRevision = 0;
 
 function passwordOptions(): PasswordOptions {
-  const symbols = ui.customSymbols.value.trim();
+  const symbols = ui.customSymbols.value;
   return {
     length: Number(ui.length.value),
     lowercase: ui.lowercase.checked,
