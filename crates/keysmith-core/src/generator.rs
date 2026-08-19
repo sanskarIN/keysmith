@@ -103,7 +103,7 @@ pub fn generate_password(options: &PasswordOptions) -> Result<String, KeySmithEr
     }
 
     random::secure_shuffle(&mut password)?;
-    let secret: String = password.iter().collect();
+    let secret: String = password.iter().copied().collect();
     password.zeroize();
     Ok(secret)
 }
