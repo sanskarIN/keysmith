@@ -23,6 +23,7 @@ All notable changes follow a Keep a Changelog style and Semantic Versioning.
 - Clipboard auto-clear settings normalize unsupported writes back to the 30-second privacy-oriented default.
 - Structured diagnostic redaction covers additional credential, API-key, session, and private-key field names.
 - Security-sensitive custom-symbol validation is enforced by the Rust core rather than relying on HTML constraints.
+- Batch IPC responses now contain only the generated secret; zxcvbn scoring is skipped for batch items because the Batch UI does not display per-item strength.
 
 ### Fixed
 - Clipboard secret buffers are wrapped in zeroizing guards so early error returns still clear the application-owned copy where practical.
