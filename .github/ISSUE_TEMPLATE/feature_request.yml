@@ -1,0 +1,32 @@
+name: Feature request
+description: Suggest a coherent improvement to KeySmith
+title: "feat: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What user problem should this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+    validations:
+      required: true
+  - type: textarea
+    id: privacy
+    attributes:
+      label: Security and privacy impact
+      description: Explain whether this adds persistence, network access, permissions, or secret handling.
+    validations:
+      required: true
+  - type: checkboxes
+    id: principles
+    attributes:
+      label: Product principles
+      options:
+        - label: The proposal can remain useful without forced sign-in or telemetry.
+          required: true
