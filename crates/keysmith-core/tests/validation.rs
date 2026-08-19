@@ -50,6 +50,21 @@ fn custom_symbol_policy_is_honored_exactly() {
 }
 
 #[test]
+fn custom_symbols_reject_oversized_or_invisible_values() {
+    for symbols in ["!".repeat(41), "!\n@".to_owned(), "! @".to_owned()] {
+        let options = PasswordOptions {
+            length: 16,
+            custom_symbols: Some(symbols),
+            ..PasswordOptions::default()
+        };
+        assert_eq!(
+            generate_password(&options),
+            Err(KeySmithError::InvalidCustomSymbols)
+        );
+    }
+}
+
+#[test]
 fn ambiguity_filter_rejects_empty_custom_symbol_pool() {
     let options = PasswordOptions {
         length: 16,
