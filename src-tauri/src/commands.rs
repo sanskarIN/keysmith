@@ -7,6 +7,7 @@ use std::{thread, time::Duration};
 use zeroize::Zeroize;
 
 const ALLOWED_CLIPBOARD_CLEAR_SECONDS: [u64; 5] = [0, 15, 30, 60, 120];
+const MAX_CLIPBOARD_CHARS: usize = 65_536;
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -69,7 +70,7 @@ pub fn get_presets_command() -> Vec<keysmith_core::PasswordPreset> {
 
 #[tauri::command]
 pub fn copy_secret_command(mut secret: String, clear_after_seconds: u64) -> Result<(), String> {
-    if secret.chars().count() > 4096 {
+    if secret.chars().count() > MAX_CLIPBOARD_CHARS {
         secret.zeroize();
         return Err("clipboard value is too large".to_owned());
     }
@@ -116,7 +117,7 @@ pub fn clear_clipboard_command() -> Result<(), String> {
 
 #[cfg(test)]
 mod tests {
-    use super::is_valid_clipboard_clear_seconds;
+    use super::{is_valid_clipboard_clear_seconds, MAX_CLIPBOARD_CHARS};
 
     #[test]
     fn clipboard_clear_duration_accepts_only_supported_values() {
@@ -126,5 +127,11 @@ mod tests {
         for seconds in [1, 14, 16, 59, 121, 300] {
             assert!(!is_valid_clipboard_clear_seconds(seconds));
         }
+    }
+
+    #[test]
+    fn clipboard_limit_covers_maximum_supported_batch() {
+        let maximum_batch_chars = (500 * 128) + 499;
+        assert!(maximum_batch_chars <= MAX_CLIPBOARD_CHARS);
     }
 }
