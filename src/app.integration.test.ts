@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 import { readFile } from "node:fs/promises";
 import { beforeAll, describe, expect, it, vi } from "vitest";
-import type { PasswordPreset, SecretResult } from "./types";
+import type { BatchSecretResult, PassphraseResult, PasswordPreset, SecretResult } from "./types";
 
-const generated: SecretResult = {
+const generatedPassword: SecretResult = {
   secret: "Ab3!fictional-safe-test",
   strength: {
     score: 4,
@@ -12,6 +12,22 @@ const generated: SecretResult = {
     label: "Very strong",
   },
 };
+
+const generatedPassphrase: PassphraseResult = {
+  secret: "fictional-safe-passphrase-test",
+  strength: {
+    score: 3,
+    guesses: 100_000,
+    guessesLog10: 5,
+    label: "Strong",
+  },
+  estimatedEntropyBits: 64.2,
+};
+
+const generatedBatch: BatchSecretResult[] = [
+  { secret: "fictional-batch-one" },
+  { secret: "fictional-batch-two" },
+];
 
 const presets: PasswordPreset[] = [
   {
@@ -37,7 +53,11 @@ const invoke = vi.fn(
       case "get_presets_command":
         return Promise.resolve(presets);
       case "generate_password_command":
-        return Promise.resolve(generated);
+        return Promise.resolve(generatedPassword);
+      case "generate_passphrase_command":
+        return Promise.resolve(generatedPassphrase);
+      case "generate_batch_command":
+        return Promise.resolve(generatedBatch);
       case "copy_secret_command":
       case "clear_clipboard_command":
         return Promise.resolve(undefined);
@@ -65,6 +85,12 @@ function mediaQueryList(query: string): MediaQueryList {
   };
 }
 
+function button(id: string): HTMLButtonElement {
+  const element = document.querySelector<HTMLButtonElement>(`#${id}`);
+  if (!element) throw new Error(`Missing button in integration fixture: ${id}`);
+  return element;
+}
+
 describe("primary frontend journey", () => {
   beforeAll(async () => {
     const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
@@ -87,31 +113,58 @@ describe("primary frontend journey", () => {
     });
   });
 
-  it("localizes metadata, generates a password, copies it, and switches generator tabs", async () => {
+  it("covers localized password, passphrase, batch, clipboard, and keyboard flows", async () => {
     const presetOption = document.querySelector<HTMLOptionElement>('#preset option[value="balanced"]');
     expect(presetOption?.textContent).toBe("Balanced");
 
-    const generateButton = document.querySelector<HTMLButtonElement>("#generate-button");
-    generateButton?.click();
-
+    button("generate-button").click();
     await vi.waitFor(() => {
-      expect(document.querySelector("#secret-output")?.textContent).toBe(generated.secret);
+      expect(document.querySelector("#secret-output")?.textContent).toBe(generatedPassword.secret);
     });
     expect(document.querySelector("#strength-label")?.textContent).toBe("Very strong");
 
-    document.querySelector<HTMLButtonElement>("#copy-button")?.click();
+    button("copy-button").click();
     await vi.waitFor(() => {
       expect(invoke).toHaveBeenCalledWith("copy_secret_command", {
-        secret: generated.secret,
+        secret: generatedPassword.secret,
         clearAfterSeconds: 30,
       });
     });
 
-    const passwordTab = document.querySelector<HTMLButtonElement>("#tab-password");
-    passwordTab?.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
-
+    button("tab-password").dispatchEvent(
+      new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }),
+    );
     expect(document.querySelector("#tab-passphrase")?.getAttribute("aria-selected")).toBe("true");
     expect(document.querySelector<HTMLElement>("#password-controls")?.hidden).toBe(true);
     expect(document.querySelector<HTMLElement>("#passphrase-controls")?.hidden).toBe(false);
+
+    button("generate-button").click();
+    await vi.waitFor(() => {
+      expect(document.querySelector("#secret-output")?.textContent).toBe(generatedPassphrase.secret);
+    });
+    expect(document.querySelector("#strength-label")?.textContent).toBe("Strong");
+    expect(document.querySelector("#status")?.textContent).toContain("64.2 bits");
+
+    button("tab-batch").click();
+    expect(document.querySelector("#tab-batch")?.getAttribute("aria-selected")).toBe("true");
+    expect(document.querySelector<HTMLElement>("#batch-controls")?.hidden).toBe(false);
+
+    button("generate-button").click();
+    await vi.waitFor(() => {
+      expect(document.querySelector("#secret-output")?.textContent).toBe(
+        "1. fictional-batch-one\n2. fictional-batch-two",
+      );
+    });
+    expect(document.querySelector("#strength-label")?.textContent).toBe("2 generated");
+    expect(button("copy-batch-button").disabled).toBe(false);
+    expect(button("export-batch-button").disabled).toBe(false);
+
+    button("copy-batch-button").click();
+    await vi.waitFor(() => {
+      expect(invoke).toHaveBeenCalledWith("copy_secret_command", {
+        secret: "fictional-batch-one\nfictional-batch-two",
+        clearAfterSeconds: 30,
+      });
+    });
   });
 });
