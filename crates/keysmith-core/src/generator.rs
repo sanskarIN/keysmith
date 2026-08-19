@@ -7,12 +7,24 @@ const SYMBOLS: &str = "!@#$%^&*()-_=+[]{};:,.?/";
 const AMBIGUOUS: &str = "Il1O0o|`'\"";
 const MIN_LENGTH: usize = 4;
 const MAX_LENGTH: usize = 128;
+const MAX_CUSTOM_SYMBOLS: usize = 40;
 
 fn filtered_chars(source: &str, exclude_ambiguous: bool) -> Vec<char> {
     source
         .chars()
         .filter(|character| !exclude_ambiguous || !AMBIGUOUS.contains(*character))
         .collect()
+}
+
+fn validate_custom_symbols(symbols: &str) -> Result<(), KeySmithError> {
+    if symbols.chars().count() > MAX_CUSTOM_SYMBOLS
+        || symbols
+            .chars()
+            .any(|character| character.is_control() || character.is_whitespace())
+    {
+        return Err(KeySmithError::InvalidCustomSymbols);
+    }
+    Ok(())
 }
 
 fn pick(chars: &[char]) -> Result<char, KeySmithError> {
@@ -29,6 +41,10 @@ pub fn generate_password(options: &PasswordOptions) -> Result<String, KeySmithEr
             min: MIN_LENGTH,
             max: MAX_LENGTH,
         });
+    }
+
+    if let Some(symbols) = options.custom_symbols.as_deref() {
+        validate_custom_symbols(symbols)?;
     }
 
     let symbol_source = options
