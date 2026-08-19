@@ -1,0 +1,23 @@
+{
+  "name": "keysmith",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src vite.config.ts",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "tauri": "tauri"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2",
+    "eslint": "^9",
+    "prettier": "^3",
+    "typescript": "^5.9",
+    "typescript-eslint": "^8",
+    "vite": "^7"
+  }
+}
