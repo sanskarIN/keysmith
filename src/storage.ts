@@ -2,6 +2,7 @@ import type { ThemePreference } from "./types";
 
 const CLIPBOARD_KEY = "keysmith.clipboardClearSeconds";
 const THEME_KEY = "keysmith.theme";
+const ONBOARDING_KEY = "keysmith.onboardingComplete";
 
 function safeRead(key: string): string | null {
   try {
@@ -35,4 +36,12 @@ export function getThemePreference(): ThemePreference {
 
 export function setThemePreference(theme: ThemePreference): void {
   safeWrite(THEME_KEY, theme);
+}
+
+export function isOnboardingComplete(): boolean {
+  return safeRead(ONBOARDING_KEY) === "true";
+}
+
+export function completeOnboarding(): void {
+  safeWrite(ONBOARDING_KEY, "true");
 }
