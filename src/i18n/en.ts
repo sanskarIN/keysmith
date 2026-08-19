@@ -118,6 +118,7 @@ export const en = {
   batchExportWarning: "This file contains usable credentials. Store it securely.",
   generationFailed: "Generation failed. Review your options and try again.",
   clipboardActionFailed: "Clipboard action failed:",
+  externalLinkFailed: "Could not open external link:",
   presetLoadFailed: "Could not load presets:",
   estimatedEntropy: "Estimated selection entropy",
 } as const;
