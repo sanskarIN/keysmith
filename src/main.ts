@@ -2,8 +2,10 @@ import "./styles.css";
 import { api } from "./api";
 import { en } from "./i18n/en";
 import {
+  completeOnboarding,
   getClipboardClearSeconds,
   getThemePreference,
+  isOnboardingComplete,
   setClipboardClearSeconds,
   setThemePreference,
 } from "./storage";
@@ -32,9 +34,16 @@ const ui = {
   copyBatch: byId<HTMLButtonElement>("copy-batch-button"),
   exportBatch: byId<HTMLButtonElement>("export-batch-button"),
   clearClipboard: byId<HTMLButtonElement>("clear-clipboard-button"),
+  settingsClearClipboard: byId<HTMLButtonElement>("settings-clear-clipboard"),
   theme: byId<HTMLButtonElement>("theme-button"),
+  settingsTheme: byId<HTMLSelectElement>("settings-theme"),
+  settings: byId<HTMLButtonElement>("settings-button"),
+  settingsDialog: byId<HTMLDialogElement>("settings-dialog"),
   about: byId<HTMLButtonElement>("about-button"),
   aboutDialog: byId<HTMLDialogElement>("about-dialog"),
+  onboardingDialog: byId<HTMLDialogElement>("onboarding-dialog"),
+  finishOnboarding: byId<HTMLButtonElement>("finish-onboarding-button"),
+  showOnboarding: byId<HTMLButtonElement>("show-onboarding-button"),
   length: byId<HTMLInputElement>("length"),
   lengthValue: byId<HTMLElement>("length-value"),
   lowercase: byId<HTMLInputElement>("lowercase"),
@@ -166,6 +175,15 @@ async function copyText(value: string): Promise<void> {
   }
 }
 
+async function clearClipboard(): Promise<void> {
+  try {
+    await api.clearClipboard();
+    setStatus(en.clipboardCleared);
+  } catch (error) {
+    setStatus(`Clipboard action failed: ${String(error)}`, true);
+  }
+}
+
 function exportBatch(): void {
   if (batch.length === 0) return;
   const content = [
@@ -220,6 +238,12 @@ function applyTheme(preference: ThemePreference): void {
   document.documentElement.dataset.theme = resolvedTheme(preference);
   document.documentElement.dataset.themePreference = preference;
   ui.theme.title = `Theme: ${preference}`;
+  ui.settingsTheme.value = preference;
+}
+
+function saveAndApplyTheme(preference: ThemePreference): void {
+  setThemePreference(preference);
+  applyTheme(preference);
 }
 
 function cycleTheme(): void {
@@ -227,8 +251,7 @@ function cycleTheme(): void {
     "system") as ThemePreference;
   const next: ThemePreference =
     current === "system" ? "light" : current === "light" ? "dark" : "system";
-  setThemePreference(next);
-  applyTheme(next);
+  saveAndApplyTheme(next);
 }
 
 async function loadPresets(): Promise<void> {
@@ -260,22 +283,12 @@ function bindEvents(): void {
       }
     });
   });
-  ui.generate.addEventListener("click", () => {
-    void generate();
-  });
-  ui.copy.addEventListener("click", () => {
-    void copyText(currentSecret);
-  });
-  ui.copyBatch.addEventListener("click", () => {
-    void copyText(batch.map((item) => item.secret).join("\n"));
-  });
+  ui.generate.addEventListener("click", () => void generate());
+  ui.copy.addEventListener("click", () => void copyText(currentSecret));
+  ui.copyBatch.addEventListener("click", () => void copyText(batch.map((item) => item.secret).join("\n")));
   ui.exportBatch.addEventListener("click", exportBatch);
-  ui.clearClipboard.addEventListener("click", () => {
-    void api
-      .clearClipboard()
-      .then(() => setStatus(en.clipboardCleared))
-      .catch((error: unknown) => setStatus(String(error), true));
-  });
+  ui.clearClipboard.addEventListener("click", () => void clearClipboard());
+  ui.settingsClearClipboard.addEventListener("click", () => void clearClipboard());
   ui.length.addEventListener("input", () => {
     ui.lengthValue.textContent = ui.length.value;
     ui.preset.value = "";
@@ -295,7 +308,22 @@ function bindEvents(): void {
     setClipboardClearSeconds(Number(ui.clipboardTime.value)),
   );
   ui.theme.addEventListener("click", cycleTheme);
+  ui.settingsTheme.addEventListener("change", () =>
+    saveAndApplyTheme(ui.settingsTheme.value as ThemePreference),
+  );
+  ui.settings.addEventListener("click", () => ui.settingsDialog.showModal());
   ui.about.addEventListener("click", () => ui.aboutDialog.showModal());
+  ui.finishOnboarding.addEventListener("click", completeOnboarding);
+  ui.showOnboarding.addEventListener("click", () => {
+    ui.settingsDialog.close();
+    ui.onboardingDialog.showModal();
+  });
+
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+    if (document.documentElement.dataset.themePreference === "system") {
+      applyTheme("system");
+    }
+  });
 }
 
 async function init(): Promise<void> {
@@ -303,6 +331,9 @@ async function init(): Promise<void> {
   ui.clipboardTime.value = String(getClipboardClearSeconds());
   bindEvents();
   await loadPresets();
+  if (!isOnboardingComplete()) {
+    ui.onboardingDialog.showModal();
+  }
 }
 
 void init();
