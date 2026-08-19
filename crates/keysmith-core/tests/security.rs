@@ -1,5 +1,5 @@
 use keysmith_core::{
-    generate_batch, generate_passphrase, generate_password, PassphraseOptions, PasswordOptions,
+    PassphraseOptions, PasswordOptions, generate_batch, generate_passphrase, generate_password,
 };
 
 #[test]
