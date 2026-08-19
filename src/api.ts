@@ -36,4 +36,7 @@ export const api = {
   clearClipboard(): Promise<void> {
     return invoke("clear_clipboard_command");
   },
+  exportBatch(content: string): Promise<boolean> {
+    return invoke("export_batch_command", { content });
+  },
 };
