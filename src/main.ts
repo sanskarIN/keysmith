@@ -14,6 +14,7 @@ import {
   setThemePreference,
 } from "./storage";
 import type {
+  BatchSecretResult,
   GeneratorMode,
   PassphraseOptions,
   PasswordOptions,
@@ -72,7 +73,7 @@ const ui = {
 
 let mode: GeneratorMode = "password";
 let currentSecret = "";
-let batch: SecretResult[] = [];
+let batch: BatchSecretResult[] = [];
 let presets: PasswordPreset[] = [];
 
 function passwordOptions(): PasswordOptions {
