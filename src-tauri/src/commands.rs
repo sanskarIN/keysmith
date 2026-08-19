@@ -41,11 +41,11 @@ pub fn generate_batch_command(
     options: PasswordOptions,
     count: usize,
 ) -> Result<Vec<BatchSecretResult>, String> {
-    generate_batch(&options, count)
-        .map_err(|error| error.to_string())?
+    let secrets = generate_batch(&options, count).map_err(|error| error.to_string())?;
+    Ok(secrets
         .into_iter()
-        .map(|secret| Ok(BatchSecretResult { secret }))
-        .collect()
+        .map(|secret| BatchSecretResult { secret })
+        .collect())
 }
 
 #[tauri::command]
