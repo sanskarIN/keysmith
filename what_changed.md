@@ -21,6 +21,7 @@ This is the canonical continuation ledger. Read it before changing the repositor
 - Apache-2.0 license, NOTICE, public/open-source repository metadata, support/funding information, issue forms, PR template, Dependabot, CI, CodeQL, and release workflow.
 - Security-sensitive generation/validation logic is isolated in Rust and does not trust HTML input constraints.
 - ADRs document the Rust/Tauri boundary, OS-CSPRNG/no-secret-storage policy, and presentation-layer localization boundary.
+- `ROADMAP.md` now reflects actual release-candidate work rather than listing already-completed UI/accessibility coverage as future work.
 
 ### Password generation
 
@@ -46,7 +47,16 @@ This is the canonical continuation ledger. Read it before changing the repositor
 - Separator validation, optional capitalization, optional two-digit suffix.
 - Selection-space entropy estimate.
 - zxcvbn strength scoring and guess estimates.
+- Single-password and passphrase commands include strength metadata because those UI views display it.
 - Frontend maps stable zxcvbn scores to localized display labels while retaining backend fallback text for unknown future scores.
+
+### Batch performance
+
+- Batch generation returns a lightweight `BatchSecretResult { secret }` for each item.
+- The desktop adapter no longer runs zxcvbn for every batch item because the Batch UI does not display per-item strength.
+- At the maximum 500-item batch, this removes up to 500 unnecessary zxcvbn evaluations while preserving cryptographic password generation unchanged.
+- TypeScript batch state and IPC types are also strength-free, preventing accidental reliance on metadata that the UI does not use.
+- `docs/performance.md` records this design and explicitly forbids invented benchmark numbers; release-build measurements remain required before publishing timing claims.
 
 ### Clipboard and batch export
 
@@ -72,7 +82,7 @@ This is the canonical continuation ledger. Read it before changing the repositor
 - Generator tabs use `aria-controls`, roving tab focus, arrow-key navigation, and semantic panel `hidden` state.
 - Static accessibility regression tests validate unique IDs, explicit label targets, tab/panel relationships, button accessible names, and dialog labelling against the real `index.html`.
 - Primary-button foreground/background design tokens are tested against the WCAG AA 4.5:1 normal-text contrast target in light and dark themes.
-- Light theme now uses a white accent foreground; dark theme retains a dark accent foreground for sufficient contrast.
+- Light theme uses a white accent foreground; dark theme retains a dark accent foreground for sufficient contrast.
 - Localized trust-list markup no longer inherits success coloring intended only for check icons.
 
 ### Internationalization readiness
@@ -125,13 +135,14 @@ English is the only shipped locale for `0.1.0`, but visible frontend copy is ext
 - Clipboard preference defaults, persistence, invalid stored values, invalid writes, non-integer writes.
 - Theme and onboarding persistence.
 - Tauri command mapping and bridge-unavailable failure normalization.
+- Lightweight secret-only batch IPC response shape.
 - Batch export warning/formatting.
 - Diagnostic redaction and recursion-depth bounds.
 - Localization application and fallback behavior.
 - Localized preset and strength metadata.
 - Static accessibility structure against the real `index.html`.
 - Design-token primary-button contrast budget.
-- `src/app.integration.test.ts` loads the real `index.html` in jsdom, installs a typed mocked Tauri bridge, verifies localized presets, generates a deterministic fictional test password, copies it with the configured 30-second auto-clear value, and exercises keyboard mode switching plus semantic panel visibility.
+- `src/app.integration.test.ts` loads the real `index.html` in jsdom, installs a typed mocked Tauri bridge, verifies localized preset metadata, generates and copies a password, switches mode from the keyboard, generates a passphrase and verifies entropy/strength presentation, switches to Batch, consumes lightweight secret-only batch results, verifies batch action enablement, and copies all batch secrets with the configured 30-second auto-clear value.
 
 The jsdom/static checks do not replace packaged native testing.
 
@@ -221,12 +232,19 @@ This continuation audited the existing verification branch and added/fixed all o
 27. Automated design-token contrast regression test.
 28. CHANGELOG updates for release-candidate hardening and accessibility work.
 29. Clippy-oriented cleanup of the custom-symbol validation branch.
+30. Roadmap audit and correction so completed regression/i18n/security work is no longer listed as future 0.2 scope.
+31. Batch desktop result split from full strength-bearing `SecretResult` so maximum-size batch generation skips unused zxcvbn evaluations.
+32. Lightweight `BatchSecretResult` contract added to TypeScript IPC types and UI state.
+33. IPC regression coverage confirms batch responses are secret-only.
+34. Real-markup integration coverage expanded to Password, Passphrase, and Batch workflows.
+35. Performance documentation updated with the batch optimization and a no-invented-benchmark measurement policy.
+36. Architecture/testing/changelog documentation synchronized with the new batch boundary and coverage.
 
 ## Verification status
 
-PR `#1` remains the release-candidate PR. Repeated atomic commits intentionally trigger fresh CI/CodeQL runs; workflow concurrency cancels superseded runs. Older green/cancelled runs are not release evidence for a newer security-sensitive commit.
+PR `#1` remains the release-candidate PR. Repeated atomic commits intentionally trigger fresh CI/CodeQL runs; workflow concurrency cancels superseded runs. Older green/cancelled runs are not release evidence for a newer security-sensitive or performance-sensitive commit.
 
-This ledger update is itself the newest candidate commit and therefore requires a fresh CI/CodeQL result. Do not merge or tag based on an older run.
+This ledger update is the final documentation commit for the current audit and therefore becomes the newest candidate requiring a fresh CI/CodeQL result. Do not merge or tag based on an older run.
 
 ### Required automated evidence on one exact candidate commit
 
@@ -255,6 +273,7 @@ On Windows, macOS, and Linux:
 - onboarding first-run/revisit,
 - password/passphrase generation,
 - strength/presets,
+- maximum-size batch generation responsiveness,
 - batch limits and plaintext export warning,
 - clipboard copy/conditional auto-clear/manual clear,
 - light/dark/system themes,
@@ -305,6 +324,7 @@ Cargo dependency policy and CodeQL run through GitHub Actions.
 - Real screenshots must come from verified packaged builds.
 - Signing/notarization requires external platform credentials and must not be faked or committed.
 - Branch protection remains deferred until the successful current check names are known.
+- Exact release-build performance numbers remain unclaimed until measured on representative supported hardware.
 
 ## Next exact tasks
 
@@ -314,10 +334,11 @@ Cargo dependency policy and CodeQL run through GitHub Actions.
 4. Retrieve CI-generated `package-lock.json` and `Cargo.lock` artifacts and commit verified lockfiles separately if artifact retrieval succeeds.
 5. Run a final green CI/CodeQL pass with committed lockfiles.
 6. Build/package Windows, macOS, and Linux applications and execute every item in `docs/verification.md`.
-7. Capture real screenshots from verified builds and update README/release notes.
-8. Enable `main` branch protection using proven successful check names.
-9. Finalize the `0.1.0` date in `CHANGELOG.md`, update this ledger with release evidence, merge PR #1, and create `v0.1.0` only after every blocker is cleared.
-10. Verify the tag-triggered release workflow creates the expected draft artifacts before publishing stable artifacts.
+7. Record measured release-build performance according to `docs/performance.md` without inventing timings.
+8. Capture real screenshots from verified builds and update README/release notes.
+9. Enable `main` branch protection using proven successful check names.
+10. Finalize the `0.1.0` date in `CHANGELOG.md`, update this ledger with release evidence, merge PR #1, and create `v0.1.0` only after every blocker is cleared.
+11. Verify the tag-triggered release workflow creates the expected draft artifacts before publishing stable artifacts.
 
 ## Migration notes
 
@@ -331,13 +352,29 @@ Future preference changes must preserve safe defaults and must never become gene
 
 ## Release notes draft — 0.1.0
 
-KeySmith 0.1.0 is an offline-first desktop password and passphrase generator with OS-backed cryptographic randomness, EFF Diceware passphrases, zxcvbn strength estimates, password-policy presets, batch generation, guarded plaintext export, conditional clipboard auto-clear, onboarding, privacy/accessibility/settings surfaces, English-first internationalization-ready UI architecture, cross-platform Tauri packaging, security documentation, and automated quality/security workflows.
+KeySmith 0.1.0 is an offline-first desktop password and passphrase generator with OS-backed cryptographic randomness, EFF Diceware passphrases, zxcvbn strength estimates for interactive single-secret views, optimized strength-free batch generation, password-policy presets, guarded plaintext export, conditional clipboard auto-clear, onboarding, privacy/accessibility/settings surfaces, English-first internationalization-ready UI architecture, cross-platform Tauri packaging, security documentation, and automated quality/security workflows.
 
 No account, telemetry, cloud sync, or password-history service is included.
 
 ## Recent meaningful commits
 
-Newest hardening/testing/docs work:
+Newest performance/documentation work:
+
+- `6c220d9a` — `docs: align integration coverage with all modes`
+- `12ddf8f7` — `docs: document lightweight batch IPC boundary`
+- `225de8e4` — `test: cover passphrase and batch UI journeys`
+- `a8e30ca5` — `test: avoid unsafe batch result assertion`
+- `135cb316` — `docs: record batch performance optimization`
+- `df25fb97` — `docs: record batch generation performance optimization`
+- `1d7321a7` — `test: cover strength-free batch IPC results`
+- `53381718` — `perf: keep batch state strength-free`
+- `fa802ba9` — `perf: use lightweight batch IPC result`
+- `4e651c34` — `refactor: define lightweight batch result type`
+- `641152f8` — `refactor: simplify batch result mapping`
+- `1260635b` — `perf: skip strength scoring for batch output`
+- `2479556a` — `docs: align roadmap with release candidate`
+
+Earlier hardening/testing/docs work:
 
 - `df8e68ae` — `docs: clarify custom symbol punctuation policy`
 - `e00a24e8` — `refactor: keep custom symbol validation clippy-clean`
