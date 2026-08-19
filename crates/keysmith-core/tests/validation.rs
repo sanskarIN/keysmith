@@ -50,13 +50,16 @@ fn custom_symbol_policy_is_honored_exactly() {
 }
 
 #[test]
-fn custom_symbols_reject_oversized_invisible_or_alphanumeric_values() {
+fn custom_symbols_reject_non_ascii_punctuation_values() {
     for symbols in [
         "!".repeat(41),
         "!\n@".to_owned(),
         "! @".to_owned(),
         "!a@".to_owned(),
         "!7@".to_owned(),
+        "!\u{200b}@".to_owned(),
+        "!🙂@".to_owned(),
+        "!₹@".to_owned(),
     ] {
         let options = PasswordOptions {
             length: 16,
@@ -68,6 +71,25 @@ fn custom_symbols_reject_oversized_invisible_or_alphanumeric_values() {
             Err(KeySmithError::InvalidCustomSymbols)
         );
     }
+}
+
+#[test]
+fn custom_symbols_accept_ascii_punctuation_boundaries() {
+    let punctuation = "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
+    let options = PasswordOptions {
+        length: 40,
+        lowercase: false,
+        uppercase: false,
+        digits: false,
+        symbols: true,
+        exclude_ambiguous: false,
+        custom_symbols: Some(punctuation.to_owned()),
+    };
+
+    let password = generate_password(&options)
+        .unwrap_or_else(|error| panic!("ASCII punctuation generation failed: {error}"));
+    assert_eq!(password.chars().count(), 40);
+    assert!(password.chars().all(|character| character.is_ascii_punctuation()));
 }
 
 #[test]
