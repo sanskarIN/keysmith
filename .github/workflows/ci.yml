@@ -33,6 +33,8 @@ jobs:
         run: npm run lint
       - name: Check repository text hygiene
         run: npm run format:check
+      - name: Check documentation inventory
+        run: npm run docs:check
       - name: Test frontend
         run: npm test
       - name: Build frontend
