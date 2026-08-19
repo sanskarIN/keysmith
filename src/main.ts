@@ -1,6 +1,7 @@
 import "./styles.css";
 import { api } from "./api";
 import { buildBatchExport } from "./export";
+import { openTrustedExternalUrl } from "./external-links";
 import { applyTranslations } from "./i18n";
 import { en, enFormat } from "./i18n/en";
 import { localizedPresetCopy } from "./i18n/presets";
@@ -202,6 +203,15 @@ async function clearClipboard(): Promise<void> {
   }
 }
 
+async function openExternalLink(url: string): Promise<void> {
+  try {
+    await openTrustedExternalUrl(url);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    setStatus(`${en.externalLinkFailed} ${message}`, true);
+  }
+}
+
 function exportBatch(): void {
   if (batch.length === 0) return;
   const now = new Date();
@@ -305,6 +315,14 @@ function bindEvents(): void {
         switchMode(next);
         byId<HTMLButtonElement>(`tab-${next}`).focus();
       }
+    });
+  });
+  document.querySelectorAll<HTMLAnchorElement>(".link-stack a[href]").forEach((link) => {
+    link.addEventListener("click", (event) => {
+      const url = link.getAttribute("href");
+      if (!url) return;
+      event.preventDefault();
+      void openExternalLink(url);
     });
   });
   ui.generate.addEventListener("click", () => void generate());
