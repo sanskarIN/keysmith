@@ -37,12 +37,14 @@ describe("Tauri IPC client", () => {
     expect(invoke).toHaveBeenCalledWith("generate_password_command", { options });
   });
 
-  it("passes the requested batch count without changing policy data", async () => {
-    invoke.mockResolvedValue([]);
+  it("passes the requested batch count and accepts lightweight secret-only results", async () => {
+    invoke.mockResolvedValue([{ secret: "fictional-batch-value" }]);
 
-    await api.generateBatch(options, 12);
+    const result = await api.generateBatch(options, 12);
 
     expect(invoke).toHaveBeenCalledWith("generate_batch_command", { options, count: 12 });
+    expect(result).toEqual([{ secret: "fictional-batch-value" }]);
+    expect("strength" in result[0]!).toBe(false);
   });
 
   it("passes clipboard expiry through the narrow clipboard command", async () => {
