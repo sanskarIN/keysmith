@@ -71,7 +71,7 @@ pub fn copy_secret_command(secret: String, clear_after_seconds: u64) -> Result<(
     let mut clipboard =
         arboard::Clipboard::new().map_err(|_| "clipboard is unavailable".to_owned())?;
     clipboard
-        .set_text(secret.as_str())
+        .set_text(secret.to_string())
         .map_err(|_| "failed to write to clipboard".to_owned())?;
 
     if clear_after_seconds > 0 {
