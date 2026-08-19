@@ -1,0 +1,38 @@
+name: Regenerate 2.0.12 lockfiles
+
+on:
+  push:
+    branches: [chore/final-verification]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: keysmith-2-0-12-lockfiles-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  regenerate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Regenerate npm lockfile without lifecycle scripts
+        run: npm install --package-lock-only --ignore-scripts
+      - name: Regenerate Cargo lockfile
+        run: cargo generate-lockfile
+      - name: Commit regenerated lockfiles
+        run: |
+          git config user.name "Sanskar"
+          git config user.email "sanskarin@outlook.in"
+          git add Cargo.lock package-lock.json
+          if git diff --cached --quiet; then
+            echo "Lockfiles already match version 2.0.12."
+            exit 0
+          fi
+          git commit -m "build: regenerate lockfiles for 2.0.12"
+          git push origin HEAD:chore/final-verification
