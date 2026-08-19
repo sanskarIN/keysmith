@@ -29,10 +29,8 @@ function normalizeClipboardClearSeconds(seconds: number): number {
 }
 
 export function getClipboardClearSeconds(): number {
-  const parsed = Number.parseInt(
-    safeRead(CLIPBOARD_KEY) ?? String(DEFAULT_CLIPBOARD_CLEAR_SECONDS),
-    10,
-  );
+  const stored = safeRead(CLIPBOARD_KEY);
+  const parsed = stored === null ? DEFAULT_CLIPBOARD_CLEAR_SECONDS : Number(stored);
   return normalizeClipboardClearSeconds(parsed);
 }
 
