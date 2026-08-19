@@ -16,6 +16,7 @@ export const en = {
   batch: "Batch",
   ready: "Ready",
   strengthScoreAria: "Strength score",
+  generatedSecretAria: "Generated secret",
   outputPlaceholder: "Select Generate to begin",
   copy: "Copy",
   generate: "Generate",
