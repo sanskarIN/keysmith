@@ -72,6 +72,7 @@ jobs:
 
   desktop-check:
     name: Tauri check (${{ matrix.os }})
+    needs: [frontend, rust-core]
     strategy:
       fail-fast: false
       matrix:
