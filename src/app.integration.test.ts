@@ -90,6 +90,8 @@ describe("primary frontend journey", () => {
             return Promise.resolve(generatedPassphrase);
           case "generate_batch_command":
             return Promise.resolve(generatedBatch);
+          case "export_batch_command":
+            return Promise.resolve(true);
           case "copy_secret_command":
           case "clear_clipboard_command":
             return Promise.resolve(undefined);
@@ -117,7 +119,7 @@ describe("primary frontend journey", () => {
     });
   });
 
-  it("covers localized password, passphrase, batch, clipboard, and keyboard flows", async () => {
+  it("covers localized password, passphrase, batch, clipboard, export, and keyboard flows", async () => {
     const presetOption = document.querySelector<HTMLOptionElement>('#preset option[value="balanced"]');
     expect(presetOption?.textContent).toBe("Balanced");
 
@@ -169,6 +171,21 @@ describe("primary frontend journey", () => {
         secret: "fictional-batch-one\nfictional-batch-two",
         clearAfterSeconds: 30,
       });
+    });
+
+    button("export-batch-button").click();
+    await vi.waitFor(() => {
+      expect(tauri.invoke).toHaveBeenCalledWith("export_batch_command", {
+        content: expect.stringContaining("# KeySmith batch export\n"),
+      });
+    });
+    const exportCall = tauri.invoke.mock.calls.find(([command]) => command === "export_batch_command");
+    const exportContent = (exportCall?.[1] as { content?: unknown } | undefined)?.content;
+    expect(exportContent).toEqual(expect.stringContaining("# WARNING:"));
+    expect(exportContent).toEqual(expect.stringContaining("fictional-batch-one"));
+    expect(exportContent).toEqual(expect.stringContaining("fictional-batch-two"));
+    await vi.waitFor(() => {
+      expect(document.querySelector("#status")?.textContent).toContain("Batch export saved");
     });
   });
 
