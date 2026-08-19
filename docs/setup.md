@@ -7,12 +7,13 @@
 - Node.js 22+ recommended and npm
 - native Tauri prerequisites for your OS
 
-Clone and install:
+Clone and install the exact dependency graph recorded by the repository lockfiles:
 
 ```bash
 git clone https://github.com/sanskarIN/keysmith.git
 cd keysmith
-npm install
+npm ci
+cargo metadata --locked --format-version 1 --no-deps > /dev/null
 ```
 
 Then run:
@@ -20,6 +21,8 @@ Then run:
 ```bash
 npm run tauri dev
 ```
+
+Use `npm install` only when intentionally changing JavaScript dependencies and updating `package-lock.json`. After changing Rust dependencies, regenerate and commit `Cargo.lock`. Dependency-manifest and lockfile changes belong in the same pull request.
 
 ## Windows
 

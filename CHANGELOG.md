@@ -2,7 +2,7 @@
 
 All notable changes follow a Keep a Changelog style and Semantic Versioning.
 
-## [Unreleased]
+## [2.0.12] - TBD
 
 ### Added
 - Rust core with OS-backed cryptographic password generation and policy validation.
@@ -11,9 +11,24 @@ All notable changes follow a Keep a Changelog style and Semantic Versioning.
 - Batch generation and guarded plaintext export.
 - Tauri desktop shell with clipboard copy/conditional auto-clear.
 - Responsive accessible TypeScript UI with light/dark/system themes.
-- Security, privacy, architecture, testing, release, and contribution documentation.
+- Security, privacy, architecture, testing, verification, release, repository-reference, and contribution documentation.
 - GitHub CI, CodeQL, dependency update, issue, pull-request, and release automation configuration.
+- Desktop-adapter regression tests for clipboard command boundaries.
+- Tracked `Cargo.lock` and `package-lock.json` files for reproducible dependency resolution.
 
-## [0.1.0] - TBD
+### Changed
+- Promoted the release-candidate version line to `2.0.12` across Rust workspace metadata, npm metadata, Tauri configuration, and visible application version surfaces.
+- CI and release automation consume npm dependencies with `npm ci` and verify/use the tracked Cargo graph with locked commands.
+- Batch mode explicitly identifies the shared password policy in the UI and accessibility structure.
+- The About dialog links directly to the KeySmith repository.
 
-Initial public preview release. Release date will be set only after clean multi-platform CI and release-candidate verification.
+### Fixed
+- Corrected the Cargo package name for the EFF word-list dependency so clean dependency resolution can find `eff-wordlist`.
+- Preserved secret-buffer zeroization on clipboard command error paths and rejected unsupported auto-clear values at the native command boundary.
+- Raised the guarded clipboard payload ceiling to support copying the maximum valid 500-by-128-character batch.
+- Rejected unsupported clipboard-clear preference writes in the frontend persistence layer.
+- Kept password-policy controls visible in Batch mode so the generated batch can be configured directly.
+- Removed an obsolete duplicate Rust workflow that did not install Tauri's Linux system dependencies.
+- Added workflow concurrency cancellation so superseded pull-request verification runs do not consume unnecessary runners.
+
+The release date remains `TBD` until the final `2.0.12` commit passes the complete automated matrix and packaged-app verification defined in `docs/verification.md`.

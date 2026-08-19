@@ -3,6 +3,8 @@ import type { ThemePreference } from "./types";
 const CLIPBOARD_KEY = "keysmith.clipboardClearSeconds";
 const THEME_KEY = "keysmith.theme";
 const ONBOARDING_KEY = "keysmith.onboardingComplete";
+const SUPPORTED_CLIPBOARD_CLEAR_SECONDS = [0, 15, 30, 60, 120] as const;
+const DEFAULT_CLIPBOARD_CLEAR_SECONDS = 30;
 
 function safeRead(key: string): string | null {
   try {
@@ -20,13 +22,19 @@ function safeWrite(key: string, value: string): void {
   }
 }
 
+function isSupportedClipboardClearSeconds(seconds: number): boolean {
+  return SUPPORTED_CLIPBOARD_CLEAR_SECONDS.some((supported) => supported === seconds);
+}
+
 export function getClipboardClearSeconds(): number {
-  const parsed = Number.parseInt(safeRead(CLIPBOARD_KEY) ?? "30", 10);
-  return [0, 15, 30, 60, 120].includes(parsed) ? parsed : 30;
+  const parsed = Number.parseInt(safeRead(CLIPBOARD_KEY) ?? String(DEFAULT_CLIPBOARD_CLEAR_SECONDS), 10);
+  return isSupportedClipboardClearSeconds(parsed) ? parsed : DEFAULT_CLIPBOARD_CLEAR_SECONDS;
 }
 
 export function setClipboardClearSeconds(seconds: number): void {
-  safeWrite(CLIPBOARD_KEY, String(seconds));
+  if (isSupportedClipboardClearSeconds(seconds)) {
+    safeWrite(CLIPBOARD_KEY, String(seconds));
+  }
 }
 
 export function getThemePreference(): ThemePreference {

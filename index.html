@@ -51,7 +51,7 @@
               </div>
             </div>
 
-            <div id="password-controls" class="controls" role="tabpanel" aria-labelledby="tab-password">
+            <div id="password-controls" class="controls" role="group" aria-label="Password policy">
               <div class="field-row">
                 <label for="length">Length <strong id="length-value">20</strong></label>
                 <input id="length" type="range" min="4" max="128" value="20" />
@@ -93,6 +93,7 @@
             </div>
 
             <div id="batch-controls" class="controls hidden" role="tabpanel" aria-labelledby="tab-batch">
+              <p class="hint">Batch generation uses the password policy shown above.</p>
               <div class="field-row stacked">
                 <label for="batch-count">Number of passwords</label>
                 <input id="batch-count" type="number" min="1" max="500" value="10" />
@@ -135,7 +136,7 @@
 
       <footer>
         <span>Made by the Sanskar</span>
-        <span>Apache-2.0 • KeySmith v0.1.0</span>
+        <span>Apache-2.0 • KeySmith v2.0.12</span>
       </footer>
 
       <dialog id="onboarding-dialog" aria-labelledby="onboarding-title">
@@ -179,7 +180,7 @@
           </section>
           <section class="settings-section" aria-labelledby="updates-title">
             <h3 id="updates-title">Updates</h3>
-            <p>Version 0.1.0. Release builds are published through the project's GitHub release process; KeySmith performs no silent background network checks.</p>
+            <p>Version 2.0.12. Release builds are published through the project's GitHub release process; KeySmith performs no silent background network checks.</p>
           </section>
           <section class="settings-section" aria-labelledby="help-title">
             <h3 id="help-title">Help & onboarding</h3>
@@ -196,11 +197,11 @@
           <p>A security-focused password and passphrase generator that works entirely offline.</p>
           <dl class="about-list">
             <div><dt>License</dt><dd>Apache-2.0</dd></div>
-            <div><dt>Version</dt><dd>0.1.0</dd></div>
+            <div><dt>Version</dt><dd>2.0.12</dd></div>
             <div><dt>Credit</dt><dd>Made by the Sanskar</dd></div>
           </dl>
           <div class="link-stack">
-            <a href="https://github.com/sanskarIN" target="_blank" rel="noreferrer">GitHub</a>
+            <a href="https://github.com/sanskarIN/keysmith" target="_blank" rel="noreferrer">Repository</a>
             <a href="https://buymeacoffee.com/sanskarIN" target="_blank" rel="noreferrer">Buy Me a Coffee</a>
             <a href="mailto:supportramsandesh@gmail.com">Support</a>
             <a href="mailto:sanskarin@outlook.in">Business contact</a>
