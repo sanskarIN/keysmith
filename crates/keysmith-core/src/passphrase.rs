@@ -21,13 +21,11 @@ pub fn generate_passphrase(options: &PassphraseOptions) -> Result<String, KeySmi
     for _ in 0..options.words {
         let index = random::uniform_index(list.len())?;
         let word = list[index].1;
-        words.push(
-            if options.capitalize {
-                capitalize_ascii(word)
-            } else {
-                word.to_owned()
-            },
-        );
+        words.push(if options.capitalize {
+            capitalize_ascii(word)
+        } else {
+            word.to_owned()
+        });
     }
 
     let mut phrase = words.join(&options.separator);
