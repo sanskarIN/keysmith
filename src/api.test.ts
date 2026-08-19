@@ -61,6 +61,14 @@ describe("Tauri IPC client", () => {
     });
   });
 
+  it("passes only prepared plaintext content to the native export command", async () => {
+    const content = "# KeySmith batch export\n# WARNING: fictional test\n\nfictional-value\n";
+    tauri.invoke.mockResolvedValue(true);
+
+    await expect(api.exportBatch(content)).resolves.toBe(true);
+    expect(tauri.invoke).toHaveBeenCalledWith("export_batch_command", { content });
+  });
+
   it("fails closed when the desktop runtime is unavailable", async () => {
     tauri.isTauri.mockReturnValue(false);
 
