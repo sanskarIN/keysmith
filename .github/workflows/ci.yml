@@ -25,6 +25,8 @@ jobs:
         run: npm install
       - name: Audit frontend dependencies
         run: npm audit --audit-level=high
+      - name: Scan repository for secrets
+        run: npm run secret:check
       - name: Typecheck frontend
         run: npm run typecheck
       - name: Lint frontend
