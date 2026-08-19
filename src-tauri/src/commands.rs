@@ -6,6 +6,8 @@ use serde::Serialize;
 use std::{thread, time::Duration};
 use zeroize::Zeroizing;
 
+const MAX_CLIPBOARD_CHARS: usize = 65_536;
+
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SecretResult {
@@ -61,10 +63,14 @@ pub fn get_presets_command() -> Vec<keysmith_core::PasswordPreset> {
     presets()
 }
 
+fn clipboard_value_is_allowed(value: &str) -> bool {
+    value.chars().count() <= MAX_CLIPBOARD_CHARS
+}
+
 #[tauri::command]
 pub fn copy_secret_command(secret: String, clear_after_seconds: u64) -> Result<(), String> {
     let secret = Zeroizing::new(secret);
-    if secret.chars().count() > 4096 {
+    if !clipboard_value_is_allowed(&secret) {
         return Err("clipboard value is too large".to_owned());
     }
 
@@ -96,4 +102,22 @@ pub fn clear_clipboard_command() -> Result<(), String> {
     clipboard
         .set_text(String::new())
         .map_err(|_| "failed to clear clipboard".to_owned())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{MAX_CLIPBOARD_CHARS, clipboard_value_is_allowed};
+
+    #[test]
+    fn clipboard_limit_allows_largest_supported_batch_text() {
+        let largest_batch_chars = (500 * 128) + 499;
+        let value = "x".repeat(largest_batch_chars);
+        assert!(clipboard_value_is_allowed(&value));
+    }
+
+    #[test]
+    fn clipboard_limit_rejects_oversized_values() {
+        let value = "x".repeat(MAX_CLIPBOARD_CHARS + 1);
+        assert!(!clipboard_value_is_allowed(&value));
+    }
 }
