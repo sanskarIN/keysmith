@@ -17,7 +17,7 @@ KeySmith is a desktop utility for Windows, macOS, and Linux. Passwords and passp
 
 - OS-backed CSPRNG through Rust `getrandom`, with rejection sampling to avoid modulo bias.
 - Password policies for length, lowercase, uppercase, digits, symbols, custom symbols, and ambiguous-character exclusion.
-- EFF large Diceware word-list passphrases through the `eff_wordlist` crate.
+- EFF large Diceware word-list passphrases through the `eff-wordlist` crate.
 - zxcvbn-based strength estimates rather than home-grown password scoring.
 - Batch generation up to 500 items with explicit export safety warnings.
 - Clipboard auto-clear that clears only if the clipboard still contains the copied secret.
@@ -27,7 +27,7 @@ KeySmith is a desktop utility for Windows, macOS, and Linux. Passwords and passp
 
 ## Screenshots
 
-Real release screenshots will be captured from signed release candidates during Phase 5. Until then, the source UI is in `index.html` and `src/styles.css`; placeholder binary screenshots are intentionally not committed.
+Real release screenshots will be captured from verified release candidates during Phase 5. Until then, the source UI is in `index.html` and `src/styles.css`; placeholder binary screenshots are intentionally not committed.
 
 ## Supported platforms
 
@@ -43,7 +43,7 @@ Real release screenshots will be captured from signed release candidates during 
 - Tauri 2 desktop shell
 - Vanilla TypeScript + Vite frontend
 - `getrandom` for OS cryptographic randomness
-- `eff_wordlist` for EFF Diceware words
+- `eff-wordlist` for EFF Diceware words
 - `zxcvbn` for strength estimation
 - `arboard` for clipboard integration
 
@@ -63,7 +63,8 @@ For platform-specific dependencies, read [`docs/setup.md`](docs/setup.md).
 ## Development
 
 ```bash
-# Frontend checks
+# Frontend and repository checks
+npm run secret:check
 npm run typecheck
 npm run lint
 npm run format:check
@@ -76,7 +77,7 @@ cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo test --workspace --all-features
 ```
 
-See [`docs/development.md`](docs/development.md) and [`docs/testing.md`](docs/testing.md).
+See [`docs/development.md`](docs/development.md), [`docs/testing.md`](docs/testing.md), and [`docs/logging.md`](docs/logging.md).
 
 ## Build and release
 
@@ -93,9 +94,9 @@ The security-sensitive generation logic lives in `crates/keysmith-core` and has 
 
 ## Security and privacy
 
-KeySmith does not log generated secrets, transmit them, or retain a password history. Clipboard use is explicit and optional. Batch exports are plaintext by design and therefore carry a prominent warning.
+KeySmith does not log generated secrets, transmit them, or retain a password history. Clipboard use is explicit and optional. Batch exports are plaintext by design and therefore carry a prominent warning. CI also checks dependency policy, common high-confidence secret patterns, and CodeQL findings.
 
-Read [`SECURITY.md`](SECURITY.md), [`PRIVACY.md`](PRIVACY.md), and [`THREAT_MODEL.md`](THREAT_MODEL.md) before making security-sensitive changes.
+Read [`SECURITY.md`](SECURITY.md), [`PRIVACY.md`](PRIVACY.md), [`THREAT_MODEL.md`](THREAT_MODEL.md), and [`docs/logging.md`](docs/logging.md) before making security-sensitive changes.
 
 ## Contributing
 
