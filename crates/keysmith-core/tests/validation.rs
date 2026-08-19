@@ -50,8 +50,14 @@ fn custom_symbol_policy_is_honored_exactly() {
 }
 
 #[test]
-fn custom_symbols_reject_oversized_or_invisible_values() {
-    for symbols in ["!".repeat(41), "!\n@".to_owned(), "! @".to_owned()] {
+fn custom_symbols_reject_oversized_invisible_or_alphanumeric_values() {
+    for symbols in [
+        "!".repeat(41),
+        "!\n@".to_owned(),
+        "! @".to_owned(),
+        "!a@".to_owned(),
+        "!7@".to_owned(),
+    ] {
         let options = PasswordOptions {
             length: 16,
             custom_symbols: Some(symbols),
@@ -69,7 +75,7 @@ fn invalid_custom_symbols_are_ignored_when_symbols_are_disabled() {
     let options = PasswordOptions {
         length: 16,
         symbols: false,
-        custom_symbols: Some("invalid symbols with spaces".to_owned()),
+        custom_symbols: Some("invalid symbols with spaces and letters".to_owned()),
         ..PasswordOptions::default()
     };
 
@@ -88,7 +94,7 @@ fn ambiguity_filter_rejects_empty_custom_symbol_pool() {
         digits: false,
         symbols: true,
         exclude_ambiguous: true,
-        custom_symbols: Some("Il1O0o|`'\"".to_owned()),
+        custom_symbols: Some("|`'\"".to_owned()),
     };
 
     assert_eq!(
