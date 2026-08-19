@@ -6,14 +6,15 @@ KeySmith releases are evidence-driven. A tag is not a substitute for a verified 
 
 - Stop feature work for the candidate.
 - Confirm `package.json`, Cargo workspace version, `src-tauri/tauri.conf.json`, footer text, Updates text, and About version agree. `src/version-consistency.test.ts` enforces this automatically.
-- Confirm `CHANGELOG.md`, `ROADMAP.md`, `README.md`, `what_changed.md`, security/privacy docs, and release screenshots are current.
+- Confirm `CHANGELOG.md`, `ROADMAP.md`, `README.md`, `what_changed.md`, security/privacy docs, the documentation portal, and release screenshots are current.
+- Run `npm run docs:check` and confirm every tracked project path is represented in `docs/repository-reference.md`.
 - Confirm generated dependency lockfiles are committed from a trusted clean resolution before stable release.
 
 ## 2. Require automated evidence on the same commit
 
 The release-candidate PR must be green for:
 
-- frontend audit, secret scan, typecheck, lint, text hygiene, tests, and build,
+- frontend audit, secret scan, typecheck, lint, text hygiene, documentation inventory, tests, and build,
 - Rust formatting, core Clippy/tests, and cargo-deny,
 - Tauri `cargo check` and Clippy with warnings denied on Linux, Windows, and macOS,
 - CodeQL JavaScript/TypeScript,
@@ -40,6 +41,7 @@ Before tagging:
 - enable/confirm `main` branch protection using the actual successful required check names,
 - resolve all blocking PR conversations,
 - confirm no signing/notarization secrets are stored in the repository,
+- confirm `package-lock.json` and `Cargo.lock` are trusted tool-generated files committed on the exact verified candidate,
 - set the final `0.1.0` date in `CHANGELOG.md`,
 - update `what_changed.md` with the exact final evidence,
 - merge the release-candidate PR only when every required gate is satisfied.
@@ -48,7 +50,19 @@ Before tagging:
 
 Create an annotated `vX.Y.Z` tag only after the merged release commit is verified. The tag must exactly match the package version, for example `v0.1.0` for package version `0.1.0`.
 
-The release workflow has a `Verify release tag` job that rejects a mismatched tag and reruns frontend/core preflight checks before any platform bundle job starts.
+The release workflow has a `Verify release tag` job that rejects a mismatched tag and reruns the release preflight before any platform bundle job starts.
+
+The preflight reruns:
+
+- npm dependency resolution and high-severity audit,
+- repository secret scan,
+- TypeScript typecheck/lint/text hygiene/documentation inventory/tests/build,
+- Rust formatting,
+- strict core Clippy,
+- Rust core tests,
+- Cargo dependency resolution and cargo-deny.
+
+Workflow-level GitHub token permission is `contents: read`. Only the platform `build` job receives `contents: write`, because it alone needs to create/update the draft release. Keep this split when modifying release automation.
 
 ## 6. Build and inspect draft artifacts
 
