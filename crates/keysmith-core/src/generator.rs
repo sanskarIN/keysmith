@@ -81,10 +81,7 @@ pub fn generate_password(options: &PasswordOptions) -> Result<String, KeySmithEr
     Ok(password.into_iter().collect())
 }
 
-pub fn generate_batch(
-    options: &PasswordOptions,
-    count: usize,
-) -> Result<Vec<String>, KeySmithError> {
+pub fn generate_batch(options: &PasswordOptions, count: usize) -> Result<Vec<String>, KeySmithError> {
     if !(1..=500).contains(&count) {
         return Err(KeySmithError::InvalidBatchSize);
     }
