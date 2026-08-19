@@ -17,17 +17,17 @@ KeySmith is a desktop utility for Windows, macOS, and Linux. Passwords and passp
 
 - OS-backed CSPRNG through Rust `getrandom`, with rejection sampling to avoid modulo bias.
 - Password policies for length, lowercase, uppercase, digits, symbols, custom symbols, and ambiguous-character exclusion.
-- EFF large Diceware word-list passphrases through the `eff_wordlist` crate.
+- EFF large Diceware word-list passphrases through the `eff-wordlist` package.
 - zxcvbn-based strength estimates rather than home-grown password scoring.
-- Batch generation up to 500 items with explicit export safety warnings.
+- Batch generation up to 500 items with the same visible password-policy controls and explicit export safety warnings.
 - Clipboard auto-clear that clears only if the clipboard still contains the copied secret.
 - Light, dark, and system themes with keyboard-first accessibility.
 - Offline-by-design architecture with restrictive Tauri CSP and least-privilege capabilities.
-- Security, privacy, threat-model, testing, accessibility, release, and architecture documentation.
+- Security, privacy, threat-model, testing, accessibility, release, verification, and file-by-file repository documentation.
 
 ## Screenshots
 
-Real release screenshots will be captured from signed release candidates during Phase 5. Until then, the source UI is in `index.html` and `src/styles.css`; placeholder binary screenshots are intentionally not committed.
+Real release screenshots will be captured from verified packaged release candidates. Until then, the source UI is in `index.html` and `src/styles.css`; placeholder screenshots are intentionally not committed.
 
 ## Supported platforms
 
@@ -43,7 +43,7 @@ Real release screenshots will be captured from signed release candidates during 
 - Tauri 2 desktop shell
 - Vanilla TypeScript + Vite frontend
 - `getrandom` for OS cryptographic randomness
-- `eff_wordlist` for EFF Diceware words
+- `eff-wordlist` for EFF Diceware words
 - `zxcvbn` for strength estimation
 - `arboard` for clipboard integration
 
@@ -70,13 +70,17 @@ npm run format:check
 npm test
 npm run build
 
-# Rust checks
+# Rust core checks
 cargo fmt --all -- --check
-cargo clippy --workspace --all-targets --all-features -- -D warnings
-cargo test --workspace --all-features
+cargo clippy -p keysmith-core --all-targets --all-features -- -D warnings
+cargo test -p keysmith-core --all-features
+
+# Desktop adapter / Tauri check
+cargo check -p keysmith --all-targets
+cargo test -p keysmith --lib
 ```
 
-See [`docs/development.md`](docs/development.md) and [`docs/testing.md`](docs/testing.md).
+See [`docs/development.md`](docs/development.md), [`docs/testing.md`](docs/testing.md), and the release-candidate gates in [`docs/verification.md`](docs/verification.md).
 
 ## Build and release
 
@@ -90,6 +94,23 @@ The Tauri bundler produces platform-native artifacts. Release signing credential
 ## Architecture
 
 The security-sensitive generation logic lives in `crates/keysmith-core` and has no UI dependency. `src-tauri` exposes a narrow IPC command surface. The TypeScript layer renders the UI and stores only non-secret preferences in local storage. Passwords are never persisted. See [`docs/architecture.md`](docs/architecture.md) and [`docs/adr/`](docs/adr/).
+
+## Documentation map
+
+- [`docs/repository-reference.md`](docs/repository-reference.md) — every tracked code/config/workflow/documentation/application-asset path and its role.
+- [`docs/setup.md`](docs/setup.md) — platform prerequisites and setup.
+- [`docs/development.md`](docs/development.md) — development workflow and boundaries.
+- [`docs/testing.md`](docs/testing.md) — automated, static, manual, and regression testing strategy.
+- [`docs/verification.md`](docs/verification.md) — release-candidate quality/security/smoke-test evidence gates.
+- [`docs/release.md`](docs/release.md) — native release process.
+- [`docs/architecture.md`](docs/architecture.md) — layers and data flow.
+- [`docs/accessibility.md`](docs/accessibility.md) — accessibility requirements.
+- [`docs/performance.md`](docs/performance.md) — performance expectations.
+- [`docs/troubleshooting.md`](docs/troubleshooting.md) — common problems and recovery steps.
+- [`docs/github.md`](docs/github.md) — repository administration and governance.
+- [`docs/wordlists.md`](docs/wordlists.md) — passphrase word-list provenance and selection model.
+- [`THREAT_MODEL.md`](THREAT_MODEL.md) — threat model and residual risks.
+- [`what_changed.md`](what_changed.md) — current engineering handoff and verification ledger.
 
 ## Security and privacy
 
@@ -110,7 +131,8 @@ Licensed under the [Apache License 2.0](LICENSE). Third-party dependencies retai
 - Business: `sanskarin@outlook.in`
 - Business: `sanskarin.business@gmail.com`
 - Support: `supportramsandesh@gmail.com`
-- GitHub: https://github.com/sanskarIN
+- Repository: https://github.com/sanskarIN/keysmith
+- GitHub profile: https://github.com/sanskarIN
 - Buy Me a Coffee: https://buymeacoffee.com/sanskarIN
 
 **Made by the Sanskar**
