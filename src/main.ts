@@ -212,22 +212,28 @@ async function openExternalLink(url: string): Promise<void> {
   }
 }
 
-function exportBatch(): void {
+async function exportBatch(): Promise<void> {
   if (batch.length === 0) return;
-  const now = new Date();
+  const revision = generationRevision;
   const content = buildBatchExport(
     batch.map((item) => item.secret),
-    now,
+    new Date(),
     en.batchExportWarning,
   );
-  const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = `keysmith-batch-${now.toISOString().slice(0, 10)}.txt`;
-  anchor.click();
-  URL.revokeObjectURL(url);
-  setStatus(en.batchExportWarning);
+  ui.exportBatch.disabled = true;
+  try {
+    const saved = await api.exportBatch(content);
+    if (revision !== generationRevision || mode !== "batch") return;
+    setStatus(saved ? en.batchExportSaved : en.batchExportCancelled);
+  } catch (error) {
+    if (revision !== generationRevision || mode !== "batch") return;
+    const message = error instanceof Error ? error.message : String(error);
+    setStatus(`${en.batchExportFailed} ${message}`, true);
+  } finally {
+    if (revision === generationRevision && mode === "batch") {
+      ui.exportBatch.disabled = batch.length === 0;
+    }
+  }
 }
 
 function setPanelVisibility(panel: HTMLElement, visible: boolean): void {
@@ -328,7 +334,7 @@ function bindEvents(): void {
   ui.generate.addEventListener("click", () => void generate());
   ui.copy.addEventListener("click", () => void copyText(currentSecret));
   ui.copyBatch.addEventListener("click", () => void copyText(batch.map((item) => item.secret).join("\n")));
-  ui.exportBatch.addEventListener("click", exportBatch);
+  ui.exportBatch.addEventListener("click", () => void exportBatch());
   ui.clearClipboard.addEventListener("click", () => void clearClipboard());
   ui.settingsClearClipboard.addEventListener("click", () => void clearClipboard());
   ui.length.addEventListener("input", () => {
