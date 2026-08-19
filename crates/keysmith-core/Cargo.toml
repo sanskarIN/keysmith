@@ -1,0 +1,21 @@
+[package]
+name = "keysmith-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Security-focused offline password and passphrase generation core for KeySmith"
+
+[dependencies]
+eff_wordlist = "1.0.3"
+getrandom = "0.4"
+serde = { version = "1", features = ["derive"] }
+thiserror = "2"
+zxcvbn = "3.1.1"
+
+[dev-dependencies]
+proptest = "1"
+
+[lints]
+workspace = true
