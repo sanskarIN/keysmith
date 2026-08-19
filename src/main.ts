@@ -1,7 +1,8 @@
 import "./styles.css";
 import { api } from "./api";
 import { buildBatchExport } from "./export";
-import { en } from "./i18n/en";
+import { applyTranslations } from "./i18n";
+import { en, enFormat } from "./i18n/en";
 import {
   completeOnboarding,
   getClipboardClearSeconds,
@@ -96,7 +97,7 @@ function passphraseOptions(): PassphraseOptions {
 
 function setBusy(busy: boolean): void {
   ui.generate.disabled = busy;
-  ui.generate.textContent = busy ? "Generating…" : "Generate";
+  ui.generate.textContent = busy ? en.generating : en.generate;
 }
 
 function setStatus(message: string, error = false): void {
@@ -121,12 +122,12 @@ function renderSecret(result: SecretResult): void {
 function resetOutput(): void {
   currentSecret = "";
   batch = [];
-  ui.output.textContent = "Select Generate to begin";
+  ui.output.textContent = en.outputPlaceholder;
   ui.output.classList.remove("has-secret", "batch-output");
   ui.copy.disabled = true;
   ui.copyBatch.disabled = true;
   ui.exportBatch.disabled = true;
-  ui.strengthLabel.textContent = "Ready";
+  ui.strengthLabel.textContent = en.ready;
   ui.strengthScore.textContent = "";
 }
 
@@ -140,7 +141,7 @@ async function generate(): Promise<void> {
       const result = await api.generatePassphrase(passphraseOptions());
       renderSecret(result);
       setStatus(
-        `${en.generated} Estimated selection entropy: ${result.estimatedEntropyBits.toFixed(1)} bits.`,
+        `${en.generated} ${en.estimatedEntropy}: ${result.estimatedEntropyBits.toFixed(1)} bits.`,
       );
       return;
     } else {
@@ -154,7 +155,7 @@ async function generate(): Promise<void> {
       ui.copy.disabled = true;
       ui.copyBatch.disabled = false;
       ui.exportBatch.disabled = false;
-      ui.strengthLabel.textContent = `${batch.length} generated`;
+      ui.strengthLabel.textContent = enFormat.batchGenerated(batch.length);
       ui.strengthScore.textContent = "";
     }
     setStatus(en.generated);
@@ -172,7 +173,7 @@ async function copyText(value: string): Promise<void> {
     await api.copySecret(value, Number(ui.clipboardTime.value));
     setStatus(en.copied);
   } catch (error) {
-    setStatus(`Clipboard action failed: ${String(error)}`, true);
+    setStatus(`${en.clipboardActionFailed} ${String(error)}`, true);
   }
 }
 
@@ -181,7 +182,7 @@ async function clearClipboard(): Promise<void> {
     await api.clearClipboard();
     setStatus(en.clipboardCleared);
   } catch (error) {
-    setStatus(`Clipboard action failed: ${String(error)}`, true);
+    setStatus(`${en.clipboardActionFailed} ${String(error)}`, true);
   }
 }
 
@@ -236,7 +237,7 @@ function resolvedTheme(preference: ThemePreference): "light" | "dark" {
 function applyTheme(preference: ThemePreference): void {
   document.documentElement.dataset.theme = resolvedTheme(preference);
   document.documentElement.dataset.themePreference = preference;
-  ui.theme.title = `Theme: ${preference}`;
+  ui.theme.title = enFormat.themeTitle(preference);
   ui.settingsTheme.value = preference;
 }
 
@@ -263,7 +264,7 @@ async function loadPresets(): Promise<void> {
       ui.preset.append(option);
     }
   } catch (error) {
-    setStatus(`Could not load presets: ${String(error)}`, true);
+    setStatus(`${en.presetLoadFailed} ${String(error)}`, true);
   }
 }
 
@@ -300,7 +301,7 @@ function bindEvents(): void {
     if (preset) {
       applyPreset(preset);
     } else {
-      ui.presetDescription.textContent = "Choose a preset or tune the controls yourself.";
+      ui.presetDescription.textContent = en.presetHint;
     }
   });
   ui.clipboardTime.addEventListener("change", () =>
@@ -326,6 +327,7 @@ function bindEvents(): void {
 }
 
 async function init(): Promise<void> {
+  applyTranslations();
   applyTheme(getThemePreference());
   ui.clipboardTime.value = String(getClipboardClearSeconds());
   bindEvents();
