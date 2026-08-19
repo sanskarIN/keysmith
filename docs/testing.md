@@ -1,11 +1,20 @@
 # Testing Strategy
 
+## Dependency setup
+
+Use the tracked dependency graph before running tests:
+
+```bash
+npm ci
+cargo metadata --locked --format-version 1 --no-deps > /dev/null
+```
+
 ## Rust core
 
 Run:
 
 ```bash
-cargo test -p keysmith-core --all-features
+cargo test --locked -p keysmith-core --all-features
 ```
 
 Coverage includes required character-class guarantees, ambiguous-character exclusion, batch limits, passphrase word count, invalid policy handling, and property tests across password lengths and restricted character sets.
@@ -15,12 +24,12 @@ Coverage includes required character-class guarantees, ambiguous-character exclu
 Run:
 
 ```bash
-cargo test -p keysmith --lib
+cargo test --locked -p keysmith --lib
 ```
 
 Desktop-adapter regression tests cover command-boundary rules that are not part of the framework-independent core, including the supported clipboard auto-clear durations and the clipboard payload ceiling required to copy the largest valid batch.
 
-The CI Linux Tauri job runs these library tests after `cargo check -p keysmith --all-targets`. Windows and macOS run the Tauri compile check so platform-specific native integration remains part of the release gate.
+The CI Linux Tauri job runs these library tests after `cargo check --locked -p keysmith --all-targets`. Windows and macOS run the locked Tauri compile check so platform-specific native integration remains part of the release gate.
 
 ## Frontend tests
 
@@ -38,7 +47,8 @@ Run all applicable checks before a pull request:
 
 ```bash
 cargo fmt --all -- --check
-cargo clippy -p keysmith-core --all-targets --all-features -- -D warnings
+cargo clippy --locked -p keysmith-core --all-targets --all-features -- -D warnings
+cargo check --locked -p keysmith --all-targets
 npm run typecheck
 npm run lint
 npm run format:check
@@ -56,9 +66,9 @@ Automated tests do not replace desktop interaction testing. Release candidates m
 - tab/mode switching,
 - password generation at boundary lengths,
 - passphrase generation at boundary word counts,
-- Batch mode using the visible password policy,
+- Batch mode using the visible shared password policy,
 - normal and maximum supported batch generation,
-- single-secret and full-batch copy,
+- single-secret and full-batch copy, including the maximum valid batch,
 - each supported conditional clipboard clear duration,
 - explicit clear-now,
 - plaintext export warnings and output,
