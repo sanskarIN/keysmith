@@ -3,6 +3,8 @@ import { api } from "./api";
 import { buildBatchExport } from "./export";
 import { applyTranslations } from "./i18n";
 import { en, enFormat } from "./i18n/en";
+import { localizedPresetCopy } from "./i18n/presets";
+import { localizedStrengthLabel } from "./i18n/strength";
 import {
   completeOnboarding,
   getClipboardClearSeconds,
@@ -106,7 +108,7 @@ function setStatus(message: string, error = false): void {
 }
 
 function renderStrength(result: SecretResult): void {
-  ui.strengthLabel.textContent = result.strength.label;
+  ui.strengthLabel.textContent = localizedStrengthLabel(result.strength.score, result.strength.label);
   ui.strengthScore.textContent = `${result.strength.score}/4`;
   ui.strengthScore.dataset.score = String(result.strength.score);
 }
@@ -204,6 +206,11 @@ function exportBatch(): void {
   setStatus(en.batchExportWarning);
 }
 
+function setPanelVisibility(panel: HTMLElement, visible: boolean): void {
+  panel.hidden = !visible;
+  panel.classList.toggle("hidden", !visible);
+}
+
 function switchMode(next: GeneratorMode): void {
   mode = next;
   document.querySelectorAll<HTMLButtonElement>("[data-mode]").forEach((tab) => {
@@ -211,9 +218,9 @@ function switchMode(next: GeneratorMode): void {
     tab.setAttribute("aria-selected", String(selected));
     tab.tabIndex = selected ? 0 : -1;
   });
-  ui.passwordControls.classList.toggle("hidden", next !== "password");
-  ui.passphraseControls.classList.toggle("hidden", next !== "passphrase");
-  ui.batchControls.classList.toggle("hidden", next !== "batch");
+  setPanelVisibility(ui.passwordControls, next === "password");
+  setPanelVisibility(ui.passphraseControls, next === "passphrase");
+  setPanelVisibility(ui.batchControls, next === "batch");
   resetOutput();
 }
 
@@ -226,7 +233,7 @@ function applyPreset(preset: PasswordPreset): void {
   ui.symbols.checked = preset.options.symbols;
   ui.ambiguous.checked = preset.options.excludeAmbiguous;
   ui.customSymbols.value = preset.options.customSymbols ?? "";
-  ui.presetDescription.textContent = preset.description;
+  ui.presetDescription.textContent = localizedPresetCopy(preset).description;
 }
 
 function resolvedTheme(preference: ThemePreference): "light" | "dark" {
@@ -259,8 +266,9 @@ async function loadPresets(): Promise<void> {
     presets = await api.presets();
     for (const preset of presets) {
       const option = document.createElement("option");
+      const copy = localizedPresetCopy(preset);
       option.value = preset.id;
-      option.textContent = preset.name;
+      option.textContent = copy.name;
       ui.preset.append(option);
     }
   } catch (error) {
