@@ -1,6 +1,6 @@
 # Repository Reference
 
-This document is the codebase map for KeySmith. It describes every tracked source, configuration, automation, policy, documentation, and application asset path currently maintained by the project. Generated build output and dependency caches are intentionally excluded from version control.
+This document is the codebase map for KeySmith. It describes every tracked source, configuration, automation, policy, documentation, lockfile, and application asset path currently maintained by the project. Generated build output and dependency caches are intentionally excluded from version control.
 
 ## Top-level project files
 
@@ -11,7 +11,9 @@ This document is the codebase map for KeySmith. It describes every tracked sourc
 | `.gitattributes` | Git text/binary handling and line-ending policy. |
 | `.gitignore` | Excludes build output, dependency folders, local environment files, OS/editor noise, and generated artifacts that should not be committed. |
 | `Cargo.toml` | Rust workspace root. Defines `keysmith-core` and the Tauri application, Rust 2024 edition, package metadata, and workspace lint policy. |
+| `Cargo.lock` | Tracked Cargo dependency lockfile used by locked CI and release builds. |
 | `package.json` | Frontend/Tauri CLI scripts and JavaScript development dependencies. |
+| `package-lock.json` | Tracked npm dependency lockfile consumed by `npm ci` in CI, setup, and release workflows. |
 | `tsconfig.json` | TypeScript compiler configuration. |
 | `vite.config.ts` | Vite development/build configuration. |
 | `eslint.config.js` | ESLint configuration for TypeScript and project scripts. |
@@ -31,7 +33,7 @@ This document is the codebase map for KeySmith. It describes every tracked sourc
 | `SUPPORT.md` | User support channels and troubleshooting direction. |
 | `THREAT_MODEL.md` | Security boundaries, protected assets, threats, mitigations, and accepted limitations. |
 
-Dependency lockfiles (`Cargo.lock` and `package-lock.json`) are release reproducibility artifacts and should remain tracked once generated and verified by the clean build pipeline.
+Both dependency lockfiles are source-of-truth release reproducibility artifacts. Dependency-manifest changes must update and commit the corresponding lockfile in the same pull request.
 
 ## `.github/` automation and community configuration
 
@@ -44,11 +46,11 @@ Dependency lockfiles (`Cargo.lock` and `package-lock.json`) are release reproduc
 | `.github/ISSUE_TEMPLATE/bug_report.yml` | Structured bug report form. |
 | `.github/ISSUE_TEMPLATE/feature_request.yml` | Structured feature request form. |
 | `.github/ISSUE_TEMPLATE/config.yml` | Issue-template chooser/contact configuration. |
-| `.github/workflows/ci.yml` | Authoritative frontend, Rust-core, desktop-adapter, cross-platform Tauri, formatting, test, and dependency-policy checks. |
+| `.github/workflows/ci.yml` | Authoritative frontend, Rust-core, desktop-adapter, cross-platform Tauri, formatting, test, lockfile, and dependency-policy checks. |
 | `.github/workflows/codeql.yml` | Scheduled and PR/push CodeQL analysis for JavaScript/TypeScript and Rust. |
-| `.github/workflows/release.yml` | Tag-triggered native Tauri release build and draft GitHub Release creation. |
+| `.github/workflows/release.yml` | Tag-triggered native Tauri release build and draft GitHub Release creation using tracked lockfiles. |
 
-The former duplicate `.github/workflows/rust.yml` workflow was removed during final verification because the maintained `ci.yml` workflow already covers Rust and installs the system dependencies required by Tauri.
+The former duplicate `.github/workflows/rust.yml` workflow was removed during final verification because the maintained `ci.yml` workflow already covers Rust and installs the system dependencies required by Tauri. A temporary branch-only workflow used to generate the first verified lockfiles was removed immediately after committing them and is not part of the permanent automation surface.
 
 ## `crates/keysmith-core/` security-sensitive Rust core
 
@@ -142,10 +144,10 @@ Generated passwords, passphrases, batches, strength inputs, custom symbols, and 
 
 | Path | Purpose |
 | --- | --- |
-| `docs/setup.md` | Platform prerequisites and initial setup. |
-| `docs/development.md` | Development commands, workflow, architecture boundaries, and contributor expectations. |
-| `docs/testing.md` | Automated/static/manual testing strategy and security regression rule. |
-| `docs/verification.md` | Release-candidate automated, security, packaged-app smoke-test, and evidence gates. |
+| `docs/setup.md` | Platform prerequisites, tracked-lockfile installation, and initial setup. |
+| `docs/development.md` | Development commands, locked dependency workflow, architecture boundaries, and contributor expectations. |
+| `docs/testing.md` | Automated/static/manual testing strategy, reproducible setup, and security regression rule. |
+| `docs/verification.md` | Release-candidate automated, reproducibility, security, packaged-app smoke-test, and evidence gates. |
 | `docs/release.md` | Release sequencing, native builds, signing/notarization boundaries, and publication process. |
 | `docs/architecture.md` | Layer responsibilities and data flow. |
 | `docs/accessibility.md` | Keyboard, focus, semantics, motion, text, and accessibility requirements. |
