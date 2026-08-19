@@ -1,6 +1,6 @@
 use keysmith_core::{
-    estimate_strength, generate_batch, generate_passphrase, generate_password, presets,
-    PassphraseOptions, PasswordOptions, StrengthEstimate,
+    PassphraseOptions, PasswordOptions, StrengthEstimate, estimate_strength, generate_batch,
+    generate_passphrase, generate_password, presets,
 };
 use serde::Serialize;
 use std::{thread, time::Duration};
