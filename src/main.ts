@@ -1,5 +1,6 @@
 import "./styles.css";
 import { api } from "./api";
+import { buildBatchExport } from "./export";
 import { en } from "./i18n/en";
 import {
   completeOnboarding,
@@ -186,19 +187,17 @@ async function clearClipboard(): Promise<void> {
 
 function exportBatch(): void {
   if (batch.length === 0) return;
-  const content = [
-    "# KeySmith batch export",
-    `# Created: ${new Date().toISOString()}`,
-    `# WARNING: ${en.batchExportWarning}`,
-    "",
-    ...batch.map((item) => item.secret),
-    "",
-  ].join("\n");
+  const now = new Date();
+  const content = buildBatchExport(
+    batch.map((item) => item.secret),
+    now,
+    en.batchExportWarning,
+  );
   const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
-  anchor.download = `keysmith-batch-${new Date().toISOString().slice(0, 10)}.txt`;
+  anchor.download = `keysmith-batch-${now.toISOString().slice(0, 10)}.txt`;
   anchor.click();
   URL.revokeObjectURL(url);
   setStatus(en.batchExportWarning);
