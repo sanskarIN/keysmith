@@ -78,21 +78,39 @@ CodeQL:
 
 Repository maintenance scripts under `scripts/` are included in ESLint. Text hygiene and secret scanning include `.env.example` and lockfiles when present.
 
+## Lockfile verification model
+
+During release-candidate development, primary CI may generate short-lived lockfile artifacts from real package-manager resolution so maintainers can inspect and commit trusted `package-lock.json` and `Cargo.lock` files.
+
+Once those files are committed, they become release inputs. The final candidate must be reverified with them tracked and documented. Stable release-tag verification does **not** generate new lockfiles.
+
+The release-tag preflight requires:
+
+- both `package-lock.json` and `Cargo.lock` to exist in the tagged commit;
+- `npm ci` to install exactly from the npm lockfile;
+- Rust core Clippy/tests to run with Cargo `--locked`;
+- `cargo metadata --locked` to prove the Cargo manifests and lockfile agree;
+- cargo-deny to evaluate the committed Rust dependency graph.
+
+A missing, inconsistent, or unexpectedly changing lockfile is release-blocking.
+
 ## Release-workflow verification
 
 A tag does not proceed directly to installers. The tag workflow first runs the `Verify release tag` preflight, which requires:
 
-- the tag name to equal `v${package.json.version}`,
-- frontend dependency audit and repository secret scan,
-- TypeScript typecheck/lint/text hygiene/documentation inventory/tests/build,
-- Rust formatting,
-- core Clippy with warnings denied,
-- Rust core tests,
-- Cargo lockfile resolution and cargo-deny dependency policy.
+- both committed dependency lockfiles;
+- the tag name to equal `v${package.json.version}`;
+- locked npm installation plus frontend dependency audit and repository secret scan;
+- TypeScript typecheck/lint/text hygiene/documentation inventory/tests/build;
+- Rust formatting;
+- core Clippy with warnings denied and `--locked`;
+- Rust core tests with `--locked`;
+- locked Cargo metadata verification;
+- cargo-deny dependency policy.
 
 Workflow-level permissions are read-only. Only the artifact-building job receives `contents: write`, because that job alone needs to create/update the draft GitHub release.
 
-Platform release builds depend on the complete preflight.
+Platform release builds use `npm ci` and depend on the complete preflight.
 
 ## Manual application verification
 
@@ -110,4 +128,4 @@ Every defect involving randomness, secret leakage, clipboard behavior, permissio
 
 ## Clean-build release gate
 
-Release candidates must pass CI and CodeQL on one exact commit, including desktop checks on Windows, macOS, and Linux. A release tag must not be created while required automated, documentation-inventory, lockfile, packaged-application, screenshot, or release-governance evidence remains unresolved.
+Release candidates must pass CI and CodeQL on one exact commit, including desktop checks on Windows, macOS, and Linux. After trusted lockfiles are committed, that lockfile commit must pass again. A release tag must not be created while required automated, documentation-inventory, lockfile, packaged-application, screenshot, or release-governance evidence remains unresolved.
