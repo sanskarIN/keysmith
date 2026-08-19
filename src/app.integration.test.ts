@@ -30,17 +30,17 @@ const presets: PasswordPreset[] = [
   },
 ];
 
-const invoke = vi.fn(async (command: string): Promise<unknown> => {
+const invoke = vi.fn((command: string): Promise<unknown> => {
   switch (command) {
     case "get_presets_command":
-      return presets;
+      return Promise.resolve(presets);
     case "generate_password_command":
-      return generated;
+      return Promise.resolve(generated);
     case "copy_secret_command":
     case "clear_clipboard_command":
-      return undefined;
+      return Promise.resolve(undefined);
     default:
-      throw new Error(`Unexpected command in integration test: ${command}`);
+      return Promise.reject(new Error(`Unexpected command in integration test: ${command}`));
   }
 });
 
