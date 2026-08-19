@@ -14,6 +14,12 @@ All notable changes follow a Keep a Changelog style and Semantic Versioning.
 - Security, privacy, architecture, testing, verification, release, repository-reference, and contribution documentation.
 - GitHub CI, CodeQL, dependency update, issue, pull-request, and release automation configuration.
 - Desktop-adapter regression tests for clipboard command boundaries.
+- Tracked `Cargo.lock` and `package-lock.json` files for reproducible dependency resolution.
+
+### Changed
+- CI and release automation now consume npm dependencies with `npm ci` and verify/use the tracked Cargo graph with locked commands.
+- Batch mode explicitly identifies the shared password policy in the UI and accessibility structure.
+- The About dialog links directly to the KeySmith repository.
 
 ### Fixed
 - Corrected the Cargo package name for the EFF word-list dependency so clean dependency resolution can find `eff-wordlist`.
