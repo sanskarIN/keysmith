@@ -4,11 +4,11 @@ import { beforeAll, describe, expect, it, vi } from "vitest";
 import type { BatchSecretResult, PassphraseResult, PasswordPreset, SecretResult } from "./types";
 
 const tauri = vi.hoisted(() => ({
-  invoke: vi.fn(),
+  invoke: vi.fn<(command: string, args?: Record<string, unknown>) => Promise<unknown>>(),
   isTauri: vi.fn(() => true),
 }));
 const opener = vi.hoisted(() => ({
-  openUrl: vi.fn(),
+  openUrl: vi.fn<(url: string) => Promise<void>>(),
 }));
 
 vi.mock("@tauri-apps/api/core", () => tauri);
@@ -179,8 +179,10 @@ describe("primary frontend journey", () => {
         content: expect.stringContaining("# KeySmith batch export\n"),
       });
     });
-    const exportCall = tauri.invoke.mock.calls.find(([command]) => command === "export_batch_command");
-    const exportContent = (exportCall?.[1] as { content?: unknown } | undefined)?.content;
+    const exportCall = tauri.invoke.mock.calls.find(
+      ([command]) => command === "export_batch_command",
+    );
+    const exportContent = exportCall?.[1]?.content;
     expect(exportContent).toEqual(expect.stringContaining("# WARNING:"));
     expect(exportContent).toEqual(expect.stringContaining("fictional-batch-one"));
     expect(exportContent).toEqual(expect.stringContaining("fictional-batch-two"));
@@ -191,12 +193,12 @@ describe("primary frontend journey", () => {
 
   it("opens an About destination through the native scoped opener", async () => {
     opener.openUrl.mockClear();
-    const githubLink = document.querySelector<HTMLAnchorElement>(
-      '.link-stack a[href="https://github.com/sanskarIN"]',
+    const githubButton = document.querySelector<HTMLButtonElement>(
+      '.link-stack [data-external-url="https://github.com/sanskarIN"]',
     );
-    if (!githubLink) throw new Error("Missing GitHub About link in integration fixture");
+    if (!githubButton) throw new Error("Missing GitHub About action in integration fixture");
 
-    githubLink.click();
+    githubButton.click();
 
     await vi.waitFor(() => {
       expect(opener.openUrl).toHaveBeenCalledWith("https://github.com/sanskarIN");
