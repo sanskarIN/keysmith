@@ -6,39 +6,39 @@ Current milestone: final `2.0.12` release-candidate verification
 Repository: `sanskarIN/keysmith`
 Primary branch: `main`
 Verification branch: `chore/final-verification`
-Verification pull request: `#12`
+Verification pull request: `#12` — `release: finalize KeySmith 2.0.12 verification`
 Required maintainer commit email: `sanskarin@outlook.in`
 
 This file is the canonical continuation and verification ledger for KeySmith. Read it together with `docs/repository-reference.md`, `docs/verification.md`, `docs/testing.md`, and `docs/release.md` before changing or releasing the project.
 
 ## Current release state
 
-KeySmith is now versioned as `2.0.12` across the Rust workspace, npm package, Tauri application configuration, and visible application version surfaces.
+KeySmith is synchronized to version `2.0.12` across the Rust workspace, npm package, Tauri application configuration, generated dependency lockfiles, and visible application version surfaces.
 
-The implemented product scope, security boundaries, tests, repository automation, dependency lockfiles, and documentation are complete at the source level. PR #12 remains the release-candidate verification branch.
+The source-level feature set, security boundaries, regression tests, repository automation, dependency reproducibility controls, and documentation are implemented. PR #12 remains the release-candidate verification branch.
 
-`2.0.12` is **not declared stable merely because the source version was changed**. A `v2.0.12` tag must not be created until the final post-version-bump PR head has the required CI and CodeQL matrix green and packaged applications complete the manual smoke/accessibility/screenshot gates in `docs/verification.md`.
+`2.0.12` is **not declared stable merely because the source version is complete**. A `v2.0.12` tag must not be created until the final PR head has the required CI and CodeQL matrix green and packaged applications complete the manual smoke/accessibility/screenshot gates in `docs/verification.md`.
 
-Any green result from a commit before the version bump is useful historical evidence but does not replace final-head verification.
+Any green result from a commit before the final 2.0.12 head is useful historical evidence but does not replace final-head verification.
 
 ## Version 2.0.12 synchronization
 
-The following authoritative version surfaces are required to agree on `2.0.12`:
+These version-bearing surfaces now agree on `2.0.12`:
 
 - `Cargo.toml` workspace package version,
-- generated `Cargo.lock` entries for the KeySmith workspace crates,
+- `Cargo.lock` entries for `keysmith` and `keysmith-core`,
 - `package.json` package version,
-- generated `package-lock.json` root package version,
-- `src-tauri/tauri.conf.json` application/bundle version,
+- `package-lock.json` root package version,
+- `src-tauri/tauri.conf.json` application version,
 - footer version in `index.html`,
 - Settings version text in `index.html`,
 - About-dialog version text in `index.html`,
 - `CHANGELOG.md`,
 - `ROADMAP.md`,
 - this `what_changed.md` ledger,
-- PR #12 title/body and release notes where version-specific.
+- PR #12 title/body.
 
-The lockfiles must be regenerated from the updated manifests rather than left with stale KeySmith package versions.
+The 2.0.12 lockfiles were regenerated on a clean GitHub hosted runner. The generated commit changed only the KeySmith workspace/root package versions in the two lockfiles. The temporary branch-only write-capable workflow used for regeneration was deleted immediately afterward and is not part of the permanent repository state.
 
 ## Implemented product scope
 
@@ -134,7 +134,7 @@ Generated passwords, passphrases, batch values, strength inputs, custom symbols,
 
 ### Rust core
 
-`crates/keysmith-core/tests/security.rs` covers security/policy behavior including required enabled character classes, ambiguous-character exclusion, batch-size limits, and passphrase word-count behavior.
+`crates/keysmith-core/tests/security.rs` covers required enabled character classes, ambiguous-character exclusion, batch-size limits, passphrase word-count behavior, and related invalid-policy behavior.
 
 `crates/keysmith-core/tests/properties.rs` contains property-based checks including generated length across the supported 4–128 range and digits-only output invariants.
 
@@ -164,13 +164,13 @@ Superseded PR runs are cancelled so only the latest head should consume the full
 
 ### CodeQL
 
-`.github/workflows/codeql.yml` analyzes JavaScript/TypeScript and Rust on pull requests, pushes to `main`, and the scheduled run. Superseded PR runs are cancelled.
+`.github/workflows/codeql.yml` analyzes JavaScript/TypeScript and Rust on pull requests, pushes to `main`, and its scheduled run. Superseded PR runs are cancelled.
 
 ### Release workflow
 
 `.github/workflows/release.yml` creates draft Windows/macOS/Linux release artifacts from version tags using `npm ci` and the tracked Cargo lockfile. Signing/notarization credentials are intentionally not stored in the repository.
 
-## Defects found and fixed during final verification
+## Defects found and fixed during release verification
 
 ### Incorrect Cargo dependency package name
 
@@ -180,7 +180,7 @@ Resolution:
 
 - corrected `crates/keysmith-core/Cargo.toml` to `eff-wordlist`,
 - retained the correct Rust import name `eff_wordlist`,
-- verified a later locked Ubuntu Tauri compile successfully passed before the 2.0.12 version update.
+- verified a later locked Ubuntu Tauri compile successfully passed before the version update.
 
 ### Obsolete duplicate Rust workflow
 
@@ -217,7 +217,7 @@ The UI offered only supported values, but the persistence helper accepted arbitr
 
 Resolution:
 
-- centralized the supported values in `src/storage.ts`,
+- centralized supported values in `src/storage.ts`,
 - invalid stored values fall back to 30 seconds,
 - unsupported writes are ignored,
 - added Vitest coverage.
@@ -241,19 +241,41 @@ Resolution:
 - generated `package-lock.json` with npm package-lock-only mode and lifecycle scripts disabled,
 - generated `Cargo.lock` on a clean GitHub hosted runner,
 - committed both lockfiles,
-- removed the temporary branch-only write-capable workflow after use,
 - converted permanent CI/release automation to `npm ci` and locked Cargo resolution,
-- synchronized setup/development/testing/release/verification/README documentation with that model.
+- synchronized setup/development/testing/release/verification/README documentation with that model,
+- regenerated both lockfiles again after the explicit `2.0.12` version synchronization,
+- removed both temporary branch-only generation workflows after their jobs completed.
 
-## Verification evidence before the 2.0.12 version update
+## Verification evidence before final 2.0.12 head
 
-On PR #12 head `fae6d30ac819159a28efea4927ce58cd8ec2f21a`, before changing the release version:
+On PR #12 head `fae6d30ac819159a28efea4927ce58cd8ec2f21a`, before the explicit version change:
 
 - Ubuntu Tauri job completed successfully, including `npm ci`, `cargo check --locked -p keysmith --all-targets`, and desktop-adapter unit tests.
 - JavaScript/TypeScript CodeQL completed successfully.
-- Other final-head jobs were still queued/in progress when the explicit request to change the release to `2.0.12` arrived.
+- Other jobs were still queued/in progress when the request to move the project to `2.0.12` arrived.
 
-Because version-bearing files changed after that evidence, the new `2.0.12` head must be verified again. Do not transfer final-release status from `fae6d30a` to the post-version-bump head.
+Those checks proved the underlying fixes could compile/run in the observed environments, but the version-bearing files and lockfiles changed afterward. The final `2.0.12` head therefore requires its own complete check suite.
+
+## 2.0.12 lockfile evidence
+
+Generated commit:
+
+- `d41f7e28` — `build: regenerate lockfiles for 2.0.12`
+
+Observed diff:
+
+- `Cargo.lock`: `keysmith` version `0.1.0` → `2.0.12`
+- `Cargo.lock`: `keysmith-core` version `0.1.0` → `2.0.12`
+- `package-lock.json`: root package version `0.1.0` → `2.0.12`
+- `package-lock.json`: `packages[""]` version `0.1.0` → `2.0.12`
+
+No dependency package/version graph change was introduced by that regeneration beyond the local KeySmith package version fields.
+
+Temporary workflow removal commit:
+
+- `bbb06a19` — `ci: remove temporary 2.0.12 lockfile workflow`
+
+The permanent branch therefore retains the generated lockfiles without retaining the temporary repository-write workflow.
 
 ## Documentation set
 
@@ -296,7 +318,7 @@ The maintained documentation includes:
 - Rust manifests and `Cargo.lock` must stay synchronized.
 - CI/release Cargo commands use the tracked graph with `--locked` where supported or validate it through locked metadata.
 - Dependency/version manifest changes and corresponding lockfile changes belong in the same pull request.
-- Temporary write-capable automation used for lockfile regeneration must be branch-scoped, must not run lifecycle scripts for package-lock-only generation, and must be removed immediately after the generated lockfiles are committed.
+- Do not retain a permanent write-capable lockfile-generation workflow.
 
 ## Verification required before stable 2.0.12
 
@@ -338,17 +360,15 @@ When automated checks are pending or queued, PR #12's live checks are the source
 
 ## Remaining exact release tasks
 
-1. Regenerate `Cargo.lock` and `package-lock.json` from the `2.0.12` manifests and commit the updated lockfiles.
-2. Remove any temporary lockfile-generation workflow immediately after it has produced the lockfile commit.
-3. Keep PR #12 open until its post-version-bump final head has the complete CI and CodeQL matrix green; inspect every failed job log and fix root causes rather than rerunning blindly.
-4. If another behavior/security defect is found, add a regression test at the closest stable layer before considering it resolved.
-5. Build native `2.0.12` release candidates on Windows, macOS, and Linux using tracked lockfiles.
-6. Run every packaged-app smoke/accessibility step in `docs/verification.md`, including maximum Batch copy and all clipboard durations.
-7. Capture real release screenshots from verified packaged applications and add them to README/release material.
-8. Enable `main` branch protection using the proven required-check names.
-9. Set the actual `2.0.12` release date in `CHANGELOG.md` only after the stable gate is satisfied.
-10. Tag the verified stable commit as `v2.0.12` and let the release workflow create draft artifacts.
-11. Inspect/sign/notarize artifacts as applicable before publishing the GitHub Release.
+1. Keep PR #12 open until its **final 2.0.12 head** has the complete CI and CodeQL matrix green; inspect every failed job log and fix root causes rather than rerunning blindly.
+2. If another behavior/security defect is found, add a regression test at the closest stable layer before considering it resolved.
+3. Build native `2.0.12` release candidates on Windows, macOS, and Linux using tracked lockfiles.
+4. Run every packaged-app smoke/accessibility step in `docs/verification.md`, including maximum Batch copy and all clipboard durations.
+5. Capture real release screenshots from verified packaged applications and add them to README/release material.
+6. Enable `main` branch protection using the proven required-check names.
+7. Set the actual `2.0.12` release date in `CHANGELOG.md` only after the stable gate is satisfied.
+8. Tag the verified stable commit as `v2.0.12` and let the release workflow create draft artifacts.
+9. Inspect/sign/notarize artifacts as applicable before publishing the GitHub Release.
 
 ## Migration notes
 
@@ -385,7 +405,7 @@ The verification PR intentionally uses granular commits. Important pre-2.0.12 co
 - `2694e505` — `fix: align batch accessibility and repository link`
 - `fae6d30a` — `docs: update final verification handoff ledger`
 
-Version 2.0.12 commits started with:
+Version 2.0.12 commits include:
 
 - `95f688d0` — `release: set Rust workspace version to 2.0.12`
 - `06ea6548` — `release: set npm package version to 2.0.12`
@@ -394,6 +414,10 @@ Version 2.0.12 commits started with:
 - `79953491` — `docs: prepare changelog for version 2.0.12`
 - `3f1ac5e8` — `docs: align roadmap with 2.0.12 release candidate`
 - `5f88d2de` — `docs: update GitHub operations for 2.0.12`
+- `22df88da` — `docs: update handoff ledger for version 2.0.12`
+- `3c0315a6` — `ci: regenerate lockfiles for version 2.0.12`
+- `d41f7e28` — `build: regenerate lockfiles for 2.0.12`
+- `bbb06a19` — `ci: remove temporary 2.0.12 lockfile workflow`
 
 Continue recording version/verification commits here when they materially change release status.
 
