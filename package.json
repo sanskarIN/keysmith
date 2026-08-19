@@ -10,6 +10,7 @@
     "lint": "eslint src scripts vite.config.ts",
     "format": "prettier --write .",
     "format:check": "node scripts/check-format.mjs",
+    "docs:check": "node scripts/check-doc-inventory.mjs",
     "secret:check": "node scripts/check-secrets.mjs",
     "test": "vitest run",
     "tauri": "tauri"
