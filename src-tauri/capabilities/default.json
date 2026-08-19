@@ -3,5 +3,5 @@
   "identifier": "main-capability",
   "description": "Least-privilege capability for the KeySmith main window",
   "windows": ["main"],
-  "permissions": ["core:default", "keysmith-generation", "keysmith-clipboard"]
+  "permissions": ["keysmith-generation", "keysmith-clipboard"]
 }
