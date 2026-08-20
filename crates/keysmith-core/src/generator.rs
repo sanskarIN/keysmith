@@ -7,12 +7,40 @@ const SYMBOLS: &str = "!@#$%^&*()-_=+[]{};:,.?/";
 const AMBIGUOUS: &str = "Il1O0o|`'\"";
 const MIN_LENGTH: usize = 4;
 const MAX_LENGTH: usize = 128;
+const MAX_CUSTOM_SYMBOLS: usize = 40;
 
 fn filtered_chars(source: &str, exclude_ambiguous: bool) -> Vec<char> {
     source
         .chars()
         .filter(|character| !exclude_ambiguous || !AMBIGUOUS.contains(*character))
         .collect()
+}
+
+fn validated_custom_symbols(
+    source: &str,
+    exclude_ambiguous: bool,
+) -> Result<Vec<char>, KeySmithError> {
+    if source.chars().take(MAX_CUSTOM_SYMBOLS + 1).count() > MAX_CUSTOM_SYMBOLS {
+        return Err(KeySmithError::InvalidCustomSymbols);
+    }
+
+    let mut symbols = Vec::with_capacity(source.len().min(MAX_CUSTOM_SYMBOLS));
+    for character in source.chars() {
+        if character.is_alphanumeric() || character.is_whitespace() || character.is_control() {
+            return Err(KeySmithError::InvalidCustomSymbols);
+        }
+        if exclude_ambiguous && AMBIGUOUS.contains(character) {
+            continue;
+        }
+        if !symbols.contains(&character) {
+            symbols.push(character);
+        }
+    }
+
+    if symbols.is_empty() {
+        return Err(KeySmithError::InvalidCustomSymbols);
+    }
+    Ok(symbols)
 }
 
 fn pick(chars: &[char]) -> Result<char, KeySmithError> {
@@ -31,11 +59,19 @@ pub fn generate_password(options: &PasswordOptions) -> Result<String, KeySmithEr
         });
     }
 
-    let symbol_source = options
-        .custom_symbols
-        .as_deref()
-        .filter(|symbols| !symbols.is_empty())
-        .unwrap_or(SYMBOLS);
+    let symbol_chars = if options.symbols {
+        match options
+            .custom_symbols
+            .as_deref()
+            .filter(|symbols| !symbols.is_empty())
+        {
+            Some(symbols) => validated_custom_symbols(symbols, options.exclude_ambiguous)?,
+            None => filtered_chars(SYMBOLS, options.exclude_ambiguous),
+        }
+    } else {
+        Vec::new()
+    };
+
     let candidates = [
         (
             options.lowercase,
@@ -49,10 +85,7 @@ pub fn generate_password(options: &PasswordOptions) -> Result<String, KeySmithEr
             options.digits,
             filtered_chars(DIGITS, options.exclude_ambiguous),
         ),
-        (
-            options.symbols,
-            filtered_chars(symbol_source, options.exclude_ambiguous),
-        ),
+        (options.symbols, symbol_chars),
     ];
 
     let selected: Vec<Vec<char>> = candidates
