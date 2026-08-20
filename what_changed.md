@@ -8,80 +8,86 @@ Active hardening branch: `fix/v2.7.4-ci`
 Active verification pull request: `#15` — `fix: restore v2.7.4 release-candidate CI`
 Required commit email for repository automation: `sanskarin@outlook.in`
 
-This is the canonical continuation ledger for KeySmith. Future work should read this file, the active pull request, the latest branch commits, and the exact GitHub Actions state before making changes.
+This is the canonical continuation ledger for KeySmith. Future work should read this file, the active pull request, the latest branch commits, and the exact GitHub Actions state before changing the repository.
 
 ## Current release status
 
 KeySmith `2.7.4` is still a **release candidate**, not a stable release. Do not create the final `v2.7.4` tag until the complete automated and manual release gate is satisfied.
 
-The original release preparation was merged through PR #13, but its final verification exposed real CI failures. PR #15 is the corrective hardening branch created from that evidence. The repair branch has since addressed dependency resolution, Rust formatter drift, Clippy lint-priority failures, dependency-license policy, dependency locking, toolchain drift, and outdated CI action runtimes.
+The original v2.7.4 preparation was merged through PR #13, but its final verification exposed real CI failures. PR #15 is the corrective hardening branch created from that evidence. It now contains the dependency-resolution, formatter, Clippy, licensing, lockfile, toolchain, workflow-runtime, clipboard-boundary, and documentation fixes discovered during the release-candidate audit.
 
-The trusted Cargo lock refresh completed in commit `714310c831191786502454efb18291ff0df8cb54`. That commit:
+The trusted Cargo lock refresh completed in commit `714310c831191786502454efb18291ff0df8cb54`. That commit regenerated `Cargo.lock`, removed `eff-wordlist`, added `englishid 0.3.1`, removed obsolete transitive dependencies from the previous word-list crate, and removed its own temporary bootstrap workflow after the one-time lock refresh completed.
 
-- regenerated `Cargo.lock`,
-- removed `eff-wordlist`,
-- added `englishid 0.3.1`,
-- removed older transitive `rand 0.8` entries no longer required by the old word-list crate,
-- removed the temporary `.github/workflows/bootstrap-cargo-lock.yml` workflow after it completed its one-time purpose.
+The automation-authored lockfile commit produced GitHub's `action_required` workflow conclusion with zero jobs. That state was correctly treated as unresolved authorization/approval evidence rather than a test failure or success. Subsequent maintainer-authored commits have produced the expected CI and CodeQL job matrices.
 
-The pull-request-triggered CI and CodeQL runs created directly from that automation-authored lockfile commit completed with GitHub's `action_required` conclusion and exposed zero jobs. That is an authorization/approval state, **not evidence that tests failed and not evidence that tests passed**. A later normal maintainer-authored branch commit must provide the actual final quality matrix.
+The branch later accumulated many queued pull-request runs while the hardening audit was still producing granular commits. CI and CodeQL now define concurrency groups with `cancel-in-progress: true` so future superseded pull-request runs do not continue consuming runner capacity. CodeQL concurrency is separated by GitHub event type so a scheduled scan cannot accidentally cancel a `main` push scan merely because both use the same ref.
 
-The exact final PR head must be re-read immediately before merge. Never merge based on the historical SHAs recorded in this handoff.
+**The exact newest PR head must always be re-read immediately before merge. Never merge or tag based only on historical SHAs recorded in this file.**
 
-## Latest v2.7.4 CI/reproducibility hardening
+## Release-candidate hardening completed
 
-### Rust dependency resolution repair
+### 1. Rust dependency resolution and licensing repair
 
-The original core manifest referenced `eff_wordlist` as though the crates.io package used the same underscore spelling. CI proved that assumption wrong because the published package name was `eff-wordlist`.
+The original core manifest referenced `eff_wordlist` as though the crates.io package used the same underscore spelling. CI proved the published package name was `eff-wordlist`.
 
-A temporary mapping corrected package resolution, but dependency-policy review then exposed a more important licensing concern: retaining `eff-wordlist` would create an avoidable licensing boundary problem for the Apache-2.0 application. The release gate was not weakened to allow the dependency.
+A temporary package mapping fixed dependency resolution, but the dependency-policy review then exposed a more important licensing concern. The release gate was not weakened by broadly allowlisting the dependency.
 
-The final solution is:
+The final implementation instead:
 
-- remove `eff-wordlist`,
-- add `englishid = "0.3.1"`,
-- use `englishid::WORD_LIST`,
-- keep KeySmith's own OS-CSPRNG/rejection-sampling selection model rather than using another crate's random-selection API.
+- removes `eff-wordlist`,
+- adds `englishid = "0.3.1"`,
+- samples `englishid::WORD_LIST`,
+- preserves KeySmith's own operating-system CSPRNG and rejection-sampling implementation,
+- documents the upstream license/source boundary in `NOTICE` and `docs/wordlists.md`.
 
-`englishid 0.3.1` declares `MIT OR Apache-2.0`. Its public word list contains 8,192 entries and is documented upstream as based on the EFF list with additional words to reach a power-of-two table size.
+`englishid 0.3.1` declares `MIT OR Apache-2.0`. Its public table contains 8,192 entries and is documented upstream as EFF-derived with additional words to reach a power-of-two table size.
 
-### Passphrase entropy model
+### 2. Passphrase entropy and word-table integrity
 
-Because the replacement table contains exactly 8,192 entries:
+The new table contains 8,192 entries:
 
 `log2(8192) = 13`
 
 Each independently and uniformly sampled word therefore contributes exactly 13 bits of selection-space entropy. The optional two-digit suffix contributes `log2(100)` additional bits.
 
-A regression test now locks this model so a future word-list change cannot silently alter the reported entropy without test review.
+Regression coverage now verifies:
 
-### Rust formatter and Clippy hardening
+- requested passphrase word count,
+- the table contains exactly 8,192 entries,
+- all 8,192 entries are unique,
+- three words without a numeric suffix report exactly 39 bits of selection-space entropy.
 
-Real CI logs showed formatter drift under Rust 1.97.1. The branch applies the exact formatter output expected by that toolchain across the affected Rust sources/tests.
+The uniqueness test is important because a table could retain a raw length of 8,192 while duplicate words silently reduce the effective output space.
 
-The workspace Clippy configuration was also corrected so explicit lint overrides remain deterministic when CI promotes warnings to errors with `-D warnings`.
+The in-product Passphrase hint was also corrected. It now describes the actual 8,192-entry EFF-derived table rather than the removed dependency's 7,776-entry “EFF large Diceware” wording.
 
-The maintained Rust commands now use locked dependency resolution where applicable:
+### 3. Rust formatter and Clippy stabilization
+
+Real release-candidate CI logs showed formatter drift under Rust 1.97.1. The affected Rust source and test files were updated to the exact formatter output expected by that toolchain.
+
+Workspace Clippy priorities were corrected so explicit `allow`/`deny` overrides behave deterministically when CI promotes warnings to errors with `-D warnings`.
+
+The maintained Rust verification commands are:
 
 ```bash
+cargo metadata --locked --format-version 1 > /dev/null
 cargo fmt --all -- --check
 cargo clippy -p keysmith-core --all-targets --all-features --locked -- -D warnings
 cargo test -p keysmith-core --all-features --locked
 cargo check -p keysmith --all-targets --locked
 cargo clippy -p keysmith --all-targets --locked -- -D warnings
 cargo test -p keysmith --lib --locked
-cargo metadata --locked --format-version 1 > /dev/null
 ```
 
-### Pinned Rust toolchain
+### 4. Pinned Rust toolchain
 
-The candidate no longer follows floating Rust `stable` for verification. `rust-toolchain.toml` pins Rust `1.97.1` so local formatting/lint behavior, GitHub CI, CodeQL autobuild behavior, and release builds do not silently drift to a newly released compiler during the v2.7.4 gate.
+The candidate no longer follows floating Rust `stable` during verification. `rust-toolchain.toml` pins Rust `1.97.1` so local formatting/lint behavior, CI, CodeQL Rust builds, and release builds do not silently change when a new stable compiler appears.
 
-A future intentional Rust upgrade should be handled as a reviewed change with formatter/Clippy/test evidence, not as an incidental result of rerunning CI.
+A future Rust upgrade must be an intentional reviewed change with formatter, Clippy, unit/property-test, desktop-check, dependency-policy, and CodeQL evidence.
 
-### Reproducible npm and Cargo resolution
+### 5. Reproducible npm and Cargo dependency resolution
 
-The repository now commits both:
+The repository now commits both ecosystem lockfiles:
 
 - `package-lock.json`,
 - `Cargo.lock`.
@@ -92,63 +98,73 @@ Frontend clean installs use:
 npm ci
 ```
 
-Rust CI/release commands use `--locked`, and release builds additionally run:
+Rust CI/release commands use `--locked`, and release builds explicitly run:
 
 ```bash
 cargo metadata --locked --format-version 1 > /dev/null
 ```
 
-A stale lockfile is now a release error rather than an opportunity for CI to resolve a different dependency graph.
+A stale lockfile is therefore a release error rather than an opportunity for CI to resolve a different dependency graph opportunistically.
 
-### GitHub Actions runtime maintenance
+### 6. GitHub Actions runtime maintenance
 
-Checkout and Node setup actions were moved to their current v7 lines so maintained workflows no longer depend on the older Node-20-backed action runtime that produced deprecation warnings during release-candidate verification.
+Maintained workflows were modernized against current upstream action documentation:
 
-The release workflow uses Node.js 22 for the project itself and Rust 1.97.1 for the Rust workspace.
+- `actions/checkout@v7`,
+- `actions/setup-node@v7`,
+- `github/codeql-action/*@v4`,
+- `tauri-apps/tauri-action@v1`,
+- `EmbarkStudios/cargo-deny-action@v2` retained after confirming it remains the maintained major used by its upstream documentation.
 
-## Earlier v2.7.4 hardening retained
+The tag-triggered Linux release job also installs `xdg-utils` alongside the Tauri/WebKit packaging prerequisites.
 
-### Version synchronization and release integrity
+### 7. Pull-request workflow concurrency
 
-The version is synchronized across:
+`.github/workflows/ci.yml` now cancels superseded runs for the same pull request/ref.
+
+`.github/workflows/codeql.yml` also cancels superseded runs, but includes `github.event_name` in the concurrency key so scheduled and push analyses on the same ref remain independent.
+
+This prevents the large stale-run backlog observed while PR #15 was receiving many granular hardening commits.
+
+### 8. Version synchronization and release integrity
+
+The version is intentionally synchronized across:
 
 - `package.json`,
 - root `Cargo.toml` `[workspace.package]`,
 - `src-tauri/tauri.conf.json`,
-- visible semantic-version labels in `index.html`.
+- semantic-version labels visible in `index.html`.
 
-`scripts/check-version.mjs` verifies those values agree. It also accepts `KEYSMITH_EXPECTED_VERSION`; a release tag such as `v2.7.4` is normalized and compared with repository metadata before release packaging.
+`scripts/check-version.mjs` verifies these values agree. It also accepts `KEYSMITH_EXPECTED_VERSION`; a tag such as `v2.7.4` is normalized and compared with repository metadata before release packaging.
 
 A mismatched tag/manifest combination must fail the release workflow.
 
-### Custom-symbol trust-boundary hardening
+### 9. Custom-symbol trust-boundary hardening
 
-The webview UI is not treated as a security boundary. Direct Tauri IPC can bypass HTML control constraints, so Rust validates custom-symbol policy independently.
+The webview is not treated as a security boundary. Direct Tauri IPC can bypass HTML control attributes, so the Rust core independently validates custom-symbol policy.
 
 The backend now:
 
 - limits custom-symbol input to 40 characters,
-- rejects alphanumeric characters in the custom-symbol set,
+- rejects alphanumeric custom symbols,
 - rejects whitespace,
 - rejects control characters,
-- applies ambiguous-character exclusion consistently,
-- deduplicates repeated custom symbols before random selection,
+- applies ambiguity exclusion consistently,
+- deduplicates repeated custom symbols before selection,
 - ignores stale custom-symbol text when the symbol class is disabled,
-- returns a typed user-safe validation error for invalid custom-symbol policy.
+- returns a typed, user-safe error for invalid custom-symbol policy.
 
-Regression coverage verifies invalid categories, overlong input, ambiguity filtering/deduplication, stale disabled input, and continued validity of every built-in preset.
+Regression coverage verifies invalid character categories, overlong input, ambiguity filtering/deduplication, stale disabled input, and continued validity of every built-in preset.
 
-### Clipboard secret-lifetime hardening
+### 10. Clipboard secret lifetime and timer policy
 
-The Tauri clipboard command now wraps owned secret strings with `zeroize::Zeroizing<String>` early enough that success and normal error-return paths receive best-effort zeroization on drop.
+The Tauri clipboard command wraps owned secret strings with `zeroize::Zeroizing<String>` early enough that success and normal error-return paths receive best-effort zeroization on drop.
 
-The delayed conditional-clear comparison value also uses a zeroizing wrapper while retained by the timer.
+The delayed value retained for conditional auto-clear is also wrapped while the timer is active.
 
-This is intentionally documented as **best effort**, not as a claim that JavaScript strings, the operating-system clipboard, the webview process, allocator copies, or every memory representation can be synchronously erased.
+This remains **best effort**. KeySmith does not claim it can erase JavaScript strings, operating-system clipboard history, allocator copies, webview memory, or every external representation of a secret on demand.
 
-### Clipboard duration policy
-
-Direct IPC no longer accepts arbitrary clear durations. The Rust adapter allows only:
+Direct IPC accepts only these clipboard auto-clear values:
 
 - `0`,
 - `15`,
@@ -158,17 +174,43 @@ Direct IPC no longer accepts arbitrary clear durations. The Rust adapter allows 
 
 seconds.
 
-The existing conditional-clear safety rule remains: KeySmith clears the clipboard only when it still equals the secret KeySmith copied. A newer clipboard value must not be erased.
+The conditional-clear safety rule remains: KeySmith clears the clipboard only if it still contains the value KeySmith copied. A newer clipboard value must not be erased accidentally.
 
-Desktop adapter unit tests cover accepted and rejected durations.
+### 11. Maximum valid batch copy fixed
 
-### Legacy workflow consolidation
+The UI supports:
 
-The redundant `.github/workflows/rust.yml` workflow was removed. It duplicated Rust coverage and lacked the Linux Tauri/WebKit system-dependency setup required for meaningful workspace verification.
+- up to `500` generated passwords in a batch,
+- up to `128` characters per generated password,
+- `Copy all`, which joins the generated passwords with newline separators.
 
-The authoritative verification path is `.github/workflows/ci.yml` plus `.github/workflows/codeql.yml`.
+The earlier Rust clipboard boundary rejected values above `4096` characters. That meant a fully valid large batch could be generated successfully but then fail when the user selected `Copy all`.
 
-Expected CI responsibilities are:
+The authoritative generator limits are now exported by `keysmith-core`:
+
+- `MAX_PASSWORD_LENGTH = 128`,
+- `MAX_BATCH_SIZE = 500`.
+
+The desktop adapter derives its maximum clipboard payload directly from those core limits:
+
+`(MAX_PASSWORD_LENGTH + 1) × MAX_BATCH_SIZE - 1 = 64,499 characters`
+
+That expression covers 500 maximum-length passwords plus the 499 newline separators inserted by the frontend batch-copy path.
+
+The size boundary remains enforced; it was not removed. Desktop-adapter tests verify:
+
+- exactly 64,499 characters are accepted,
+- 64,500 characters are rejected.
+
+This keeps valid product behavior working while retaining a bounded IPC payload policy and preventing the core/desktop limits from silently drifting apart.
+
+### 12. Legacy workflow consolidation
+
+The redundant `.github/workflows/rust.yml` workflow was removed. It duplicated Rust coverage and lacked the Linux Tauri/WebKit system prerequisites required for meaningful workspace verification.
+
+The authoritative pull-request verification path is `.github/workflows/ci.yml` plus `.github/workflows/codeql.yml`.
+
+Expected maintained CI jobs:
 
 - `Frontend quality`,
 - `Rust core quality`,
@@ -177,7 +219,7 @@ Expected CI responsibilities are:
 - `Tauri check (windows-latest)`,
 - `Tauri check (macos-latest)`.
 
-Expected CodeQL language analyses are:
+Expected CodeQL analyses:
 
 - `analyze (javascript-typescript)`,
 - `analyze (rust)`.
@@ -192,19 +234,21 @@ Do not configure the deleted legacy `Rust` workflow as a branch-protection requi
 - Security-sensitive generation/policy logic in framework-independent `crates/keysmith-core`.
 - Tauri 2 desktop adapter in `src-tauri`.
 - Vanilla TypeScript + Vite frontend.
-- Narrow typed IPC surface between the webview and Rust.
+- Narrow typed IPC surface between webview and Rust.
 - Apache-2.0 project license.
 - Windows, macOS, and Linux desktop packaging configuration.
+- Restrictive Tauri CSP and `freezePrototype` enabled.
+- Main-window capability restricted to Tauri core defaults plus KeySmith generation and clipboard commands; no shell/filesystem/process capability is intentionally granted.
 
 ### Password generation
 
 The Rust core provides:
 
-- operating-system cryptographic randomness via `getrandom`,
-- rejection sampling for unbiased bounded random indexes,
-- secure Fisher-Yates-style shuffling backed by the same unbiased sampler,
+- operating-system cryptographic randomness through `getrandom`,
+- rejection sampling for unbiased bounded indexes,
+- Fisher-Yates-style secure shuffle backed by the same unbiased sampler,
 - password lengths from 4 through 128 characters,
-- lowercase/uppercase/digit/symbol classes,
+- lowercase, uppercase, digit, and symbol controls,
 - custom symbols with backend validation,
 - ambiguous-character exclusion,
 - at least one character from every enabled class,
@@ -219,31 +263,32 @@ The core provides:
 
 - 3–12 random words,
 - an 8,192-entry EFF-derived `englishid` table,
+- verified table uniqueness,
 - KeySmith-controlled OS-CSPRNG uniform index selection,
 - configurable separator with validation,
 - optional capitalization,
 - optional two-digit suffix,
 - selection-space entropy estimation.
 
-Repeated words remain allowed; removing previously selected words would change the sampling model and is unnecessary for secure independently sampled passphrases.
+Repeated words remain allowed. Removing previously selected words would change the independent-sampling model and is unnecessary for secure random passphrases.
 
 ### Strength estimation
 
-KeySmith uses `zxcvbn` rather than a home-grown strength label algorithm. Strength reporting remains an estimate and must not be represented as a guarantee that a credential cannot be guessed or compromised.
+KeySmith uses `zxcvbn` instead of a home-grown password-strength scoring algorithm. Strength output remains an estimate and must not be represented as a guarantee that a credential cannot be guessed or compromised.
 
 ### Clipboard and export behavior
 
 - Clipboard copy is explicit.
-- Clipboard input is capped at 4096 characters at the Rust boundary.
-- Auto-clear duration is allowlisted in Rust.
+- Clipboard IPC size is bounded to the exact maximum needed for the largest valid generated batch (`64,499` characters).
+- Clipboard duration is allowlisted in Rust.
 - Auto-clear is conditional on the clipboard still containing the expected secret.
 - Clear-now is explicit.
-- Batch export is plaintext by design and displays a warning.
+- Batch export is plaintext by design and displays a prominent warning.
 - Exported plaintext files are outside the application's memory-only generated-secret model once written by the user.
 
 ### UI/UX
 
-The current desktop interface includes:
+The desktop interface includes:
 
 - Password, Passphrase, and Batch modes,
 - live strength presentation,
@@ -262,7 +307,7 @@ The current desktop interface includes:
 - reduced-motion handling,
 - responsive touch targets,
 - non-color-only status text,
-- editable SVG brand asset plus native PNG/ICO/ICNS icons.
+- editable SVG branding plus native PNG/ICO/ICNS application icons.
 
 Real release screenshots have intentionally not been represented as complete until captured from verified packaged v2.7.4 builds.
 
@@ -281,7 +326,7 @@ Current intended boundaries:
 - documented threat model and residual risks,
 - dependency advisory/license/source policy through `deny.toml`,
 - CodeQL automation,
-- dependency update automation,
+- Dependabot for Cargo, npm, and GitHub Actions,
 - no repository signing secrets.
 
 `PRIVACY.md`, `SECURITY.md`, and `THREAT_MODEL.md` must be updated whenever a change alters these boundaries.
@@ -293,7 +338,7 @@ Current intended boundaries:
 `crates/keysmith-core/tests/security.rs` covers at least:
 
 - every enabled password class is represented,
-- ambiguous-character exclusion,
+- ambiguity exclusion,
 - invalid custom-symbol categories,
 - overlong custom-symbol input,
 - custom-symbol deduplication/ambiguity behavior,
@@ -301,7 +346,9 @@ Current intended boundaries:
 - built-in preset validity,
 - batch-size bounds,
 - passphrase requested word count,
-- passphrase entropy behavior for the 8,192-entry table.
+- exact 8,192-entry word-table size,
+- word-table uniqueness,
+- passphrase entropy behavior.
 
 ### Rust property tests
 
@@ -309,13 +356,18 @@ Current intended boundaries:
 
 ### Desktop adapter tests
 
-The `src-tauri` library test module covers the supported clipboard-duration allowlist without needing a live OS clipboard.
+The `src-tauri` library test module covers:
 
-Actual clipboard integration still requires platform smoke testing because the behavior depends on the operating-system clipboard service.
+- every supported clipboard duration,
+- rejection of undocumented durations,
+- acceptance of the exact largest valid batch-copy payload,
+- rejection one character above the maximum batch-copy payload.
+
+Actual operating-system clipboard integration still requires platform smoke testing because it depends on the OS clipboard service.
 
 ### Frontend tests
 
-Vitest covers non-secret preference helpers such as theme/onboarding/clipboard preference persistence and safe fallback behavior.
+Vitest covers non-secret preference helpers including theme, onboarding, clipboard-clear persistence, and safe fallback behavior.
 
 ## Canonical clean-check commands
 
@@ -345,23 +397,23 @@ cargo test -p keysmith --lib --locked
 
 ### Release tag integrity
 
-For `v2.7.4`, set:
+For the eventual v2.7.4 tag, set the shell-appropriate equivalent of:
 
 ```text
 KEYSMITH_EXPECTED_VERSION=v2.7.4
 ```
 
-and run:
+then run:
 
 ```bash
 npm run version:check
 ```
 
-Use the shell-appropriate syntax for environment variables on Windows PowerShell/cmd, POSIX shells, or CI.
+The tag must not be created until all other pre-tag release gates are satisfied.
 
 ## Files that define the release/security contract
 
-Before significant changes, review as applicable:
+Review these as applicable before significant changes:
 
 - `README.md`
 - `CHANGELOG.md`
@@ -373,6 +425,16 @@ Before significant changes, review as applicable:
 - `CONTRIBUTING.md`
 - `NOTICE`
 - `deny.toml`
+- `Cargo.toml`
+- `Cargo.lock`
+- `rust-toolchain.toml`
+- `package.json`
+- `package-lock.json`
+- `index.html`
+- `src/main.ts`
+- `src-tauri/tauri.conf.json`
+- `src-tauri/capabilities/default.json`
+- `src-tauri/permissions/keysmith.toml`
 - `docs/architecture.md`
 - `docs/development.md`
 - `docs/testing.md`
@@ -388,51 +450,67 @@ Before significant changes, review as applicable:
 
 Do these in order unless new evidence changes priorities:
 
-1. Let the latest normal maintainer-authored PR head run the complete CI and CodeQL matrix.
-2. Inspect every failing job's actual logs; fix root causes rather than weakening gates.
-3. Require one exact final head SHA with all six maintained CI jobs and both CodeQL analyses successful.
-4. Review open PR comments/review threads and resolve any real blocker.
-5. Confirm branch-protection required-check names from the successful GitHub-rendered checks.
-6. Build native Windows, macOS, and Linux packages from the verified candidate.
-7. Smoke-test packaged apps on each platform, especially OS clipboard behavior and WebView/Tauri integration.
-8. Perform keyboard/accessibility/reduced-motion manual review against packaged builds.
-9. Capture genuine screenshots from verified builds.
-10. Update documentation with those screenshots and any discovered platform caveats.
-11. Merge the verified PR to `main` only after the exact PR head is green.
-12. Verify the resulting `main` commit again.
-13. Create `v2.7.4` only after the merge commit and version metadata are confirmed.
-14. Inspect draft release artifacts, signatures/notarization, checksums where applicable, install/launch/uninstall behavior, and release notes before publishing.
+1. Freeze the branch after this handoff update and read the exact newest PR #15 head SHA.
+2. Require the complete CI and CodeQL matrix to run on that exact head.
+3. Inspect every failure's real job log and fix root causes rather than weakening gates.
+4. Require all six maintained CI jobs and both CodeQL analyses to succeed on one exact final head SHA.
+5. Re-check PR reviews and review threads for unresolved blockers.
+6. Confirm branch-protection required-check names from the successful names GitHub actually renders.
+7. Build native Windows, macOS, and Linux packages from the verified candidate.
+8. Smoke-test the packaged applications, including generation, custom-symbol failures, maximum-size batch copy, conditional clipboard clear, clear-now, batch export warnings, onboarding, settings, themes, and support links.
+9. Perform keyboard, focus, reduced-motion, and accessibility review against packaged builds.
+10. Capture genuine screenshots from the verified packages.
+11. Update documentation with the real screenshots and any discovered platform caveats.
+12. Merge PR #15 to `main` only after the exact final PR head is green.
+13. Verify the resulting `main` merge commit and required checks.
+14. Create `v2.7.4` only after merge verification and all pre-tag package/manual gates are complete.
+15. Inspect the draft release artifacts, signing/notarization status, checksums/signatures where applicable, install/launch/uninstall behavior, and final release notes before publishing.
 
 ## Non-goals and boundaries
 
-Do not expand scope casually while the release candidate is being stabilized. In particular:
+Do not expand scope casually while this release candidate is being stabilized. In particular:
 
 - do not add cloud sync or password-history persistence without a separate architecture/security decision,
 - do not add telemetry merely for convenience,
-- do not weaken CSP/capability boundaries to work around UI issues,
+- do not weaken CSP/capability boundaries to work around UI defects,
 - do not broaden dependency-license allowlists without reviewing the actual dependency license,
 - do not bypass lockfile enforcement to make CI pass,
+- do not remove the bounded clipboard IPC policy merely to support valid batches; derive it from core limits instead,
 - do not claim a release is stable because a branch is mergeable,
+- do not treat queued, missing, unexpectedly skipped, cancelled, or `action_required` workflows as successful verification,
 - do not publish placeholder screenshots as real packaged-app evidence,
-- do not commit signing material, tokens, generated credentials, or smoke-test secrets.
+- do not commit signing material, access tokens, generated credentials, or smoke-test secrets.
 
 ## Commit strategy
 
-Continue using small, meaningful commits whenever practical. Examples:
+Continue using small, meaningful commits whenever practical:
 
 - `fix:` for concrete defects,
 - `test:` for focused regression coverage,
 - `ci:` for verification/workflow changes,
 - `build:` for dependency/toolchain/lockfile work,
+- `refactor:` for behavior-preserving policy centralization,
 - `docs:` for documentation-only changes,
-- `security:` when a change is specifically security-policy hardening.
+- `security:` for focused security-policy hardening.
 
-Do not manufacture meaningless commits solely to increase commit count; each commit should remain reviewable and explainable.
+Do not manufacture meaningless commits solely to increase the commit count. Each commit should remain independently understandable and reviewable.
 
 ## Immediate continuation checkpoint
 
-At this handoff, the one-time Cargo lockfile bootstrap has completed and removed itself. The old `eff-wordlist` dependency is no longer present in the regenerated lockfile, and `englishid 0.3.1` is locked instead. Release documentation has been updated to require reproducible npm/Cargo resolution and to treat `action_required`/missing jobs as unresolved rather than green.
+At this handoff:
 
-The next authoritative evidence is the CI/CodeQL result on the newest maintainer-authored PR #15 head created after these documentation updates. If that head is green, proceed to review/packaging gates; if not, inspect the failing job logs and continue fixing the branch.
+- the one-time Cargo lockfile bootstrap has completed and removed itself,
+- `eff-wordlist` is gone from the current locked dependency graph,
+- `englishid 0.3.1` is locked instead,
+- the passphrase table size and uniqueness are regression-tested,
+- Rust 1.97.1 is pinned,
+- npm and Cargo lockfiles are committed and enforced,
+- CodeQL uses v4,
+- the release action uses Tauri Action v1,
+- stale PR workflow runs are prevented from recurring through concurrency cancellation,
+- the valid maximum-size Batch `Copy all` path now fits the bounded Rust clipboard policy,
+- threat-model/testing/changelog/UI documentation has been aligned with these changes.
+
+The next authoritative evidence is the CI/CodeQL result on the exact PR #15 head created by this handoff commit. If that head is green, proceed to package/review gates. If a job fails, inspect its real logs and continue from the specific root cause.
 
 **Do not tag `v2.7.4` yet.**
