@@ -2,511 +2,476 @@
 
 Last updated: 2026-08-20
 Current version: `2.7.4`
-Current milestone: v2.7.4 release-candidate hardening and verification
+Current milestone: full native cross-platform verification
 Repository: `sanskarIN/keysmith`
 Primary branch: `main`
-Release branch: `release/v2.7.4`
-Verification pull request: `#13` — `release: prepare KeySmith v2.7.4`
-Required commit email: `sanskarin@outlook.in`
+Current work branch: `feat/full-cross-platform`
+Previous v2.7.4 PR: `#13` — merged to `main` at `726e5c08776d38a47c4c649cb4d6d553ca1f09fd`
+Required maintainer commit email: `sanskarin@outlook.in`
 
-This file is the canonical continuation ledger for future KeySmith work. Read it, the latest commits, the open release pull request, and the current workflow state before changing the repository.
+This is the canonical continuation ledger. Read this file, the current branch/PR head, and current GitHub Actions results before making further changes.
 
-## v2.7.4 status
+## Current status
 
-The repository has been moved from the earlier `0.1.0` preview metadata to the requested `2.7.4` release-candidate line. The version number is now synchronized across the frontend package, Rust workspace, Tauri bundle configuration, and visible application labels.
+The earlier desktop-focused v2.7.4 release-candidate work was merged through PR #13. The current continuation extends the same `2.7.4` codebase from Windows/macOS/Linux to the complete native Tauri 2 target set:
 
-`v2.7.4` is **not yet declared stable and must not be tagged yet**. The remaining blockers are clean CI/CodeQL evidence on the exact final candidate commit, trusted lockfile generation, native package builds, packaged-app smoke testing, real screenshots, branch-protection setup, and final release-artifact verification.
+- Windows,
+- macOS,
+- Linux,
+- Android,
+- iOS / iPadOS.
 
-PR #13 is open and currently reported as mergeable by the connected GitHub integration. CI and CodeQL were successfully observed as queued on candidate SHA `c46f8e8c` after the redundant legacy Rust workflow was removed: the maintained CI matrix exposed six jobs and CodeQL exposed two language jobs. Additional documentation-only commits were then made to complete the repository documentation audit. At the time this ledger was finalized, the newest documentation commit had not yet exposed its replacement workflow runs through the connector. Therefore **no claim of green CI is made**. The exact final PR head must be checked again before merge or tag.
+The source/configuration work is implemented on `feat/full-cross-platform`. **Do not call v2.7.4 fully cross-platform verified until the exact final branch/PR head passes the expanded Windows, macOS, Linux, Android, iOS, CodeQL, package, signing, and manual smoke-test gates.**
 
-## Work completed in this v2.7.4 continuation
+A browser/PWA deployment is not treated as another Tauri native target and would require a separate security/filesystem/clipboard architecture review.
 
-### 1. Version synchronization
+## Cross-platform implementation completed
 
-Changed exact paths:
+### 1. Removed the desktop-only clipboard dependency
 
-- `package.json`
-  - package version changed from `0.1.0` to `2.7.4`.
-  - `version:check` npm task added.
-- `Cargo.toml`
-  - `[workspace.package].version` changed from `0.1.0` to `2.7.4`.
-  - both `crates/keysmith-core` and `src-tauri` continue inheriting the workspace version.
-- `src-tauri/tauri.conf.json`
-  - Tauri application/bundle version changed from `0.1.0` to `2.7.4`.
-- `index.html`
-  - footer version changed to `KeySmith v2.7.4`.
-  - Settings update text changed to `Version 2.7.4`.
-  - About dialog version changed to `2.7.4`.
-- `CHANGELOG.md`
-  - v2.7.4 release-candidate section added and expanded with the hardening fixes from this pass.
-  - the old 0.1.0 checkpoint is retained only as historical preview context and is explicitly described as superseded before stable release.
+Changed:
 
-### 2. Deterministic release-version integrity gate
+- `src-tauri/Cargo.toml`
+  - removed direct `arboard = "3"` application dependency,
+  - added `tauri-plugin-clipboard-manager = "2"`,
+  - added `tauri-plugin-dialog = "2"`,
+  - added `tauri-plugin-fs = "2"`.
 
-Changed exact paths:
+Why:
 
-- `scripts/check-version.mjs`
-  - new dependency-free Node script.
-  - validates semantic version syntax from `package.json`.
-  - compares the frontend package version with the Rust workspace version in `Cargo.toml`.
-  - compares the frontend package version with `src-tauri/tauri.conf.json`.
-  - scans semantic versions exposed in `index.html` and rejects visible UI mismatches.
-  - optionally accepts `KEYSMITH_EXPECTED_VERSION` and strips a leading `v` so a prospective/release Git tag can be compared with repository metadata.
-  - exits with an error on any mismatch.
-- `package.json`
-  - added `npm run version:check`.
-- `.github/workflows/ci.yml`
-  - frontend quality job now executes `npm run version:check`.
-- `.github/workflows/release.yml`
-  - tag-triggered builds now set `KEYSMITH_EXPECTED_VERSION` to `${{ github.ref_name }}` and run the version check before `tauri-apps/tauri-action`.
-  - a tag such as `v2.7.5` cannot silently build artifacts while the repository manifests still identify `2.7.4`.
+The direct clipboard implementation was the primary native-code obstacle to Android/iOS. KeySmith only requires plaintext clipboard text, which is supported by the official Tauri clipboard plugin across Windows, macOS, Linux, Android, and iOS.
 
-### 3. Custom-symbol policy hardening
+### 2. Shared native plugin initialization
 
-A backend trust-boundary gap was found: HTML limited custom symbols to 40 characters, but direct Tauri IPC could bypass that UI constraint and could pass letters, digits, whitespace, or control characters as the requested “symbol” class. That could weaken the meaning of an enabled symbol requirement and permit unnecessarily large input.
+Changed:
 
-Changed exact paths:
+- `src-tauri/src/lib.rs`
+  - initializes the clipboard-manager plugin,
+  - initializes the dialog plugin,
+  - initializes the filesystem plugin,
+  - retains the same narrow KeySmith invoke-handler surface.
 
-- `crates/keysmith-core/src/error.rs`
-  - added `KeySmithError::InvalidCustomSymbols` with a user-safe validation message.
-- `crates/keysmith-core/src/generator.rs`
-  - added a backend maximum of 40 custom-symbol characters.
-  - rejects alphanumeric custom-symbol characters.
-  - rejects whitespace custom-symbol characters.
-  - rejects control characters.
-  - applies the existing ambiguity-exclusion set to custom symbols.
-  - deduplicates repeated custom symbols before random selection so duplicate user input does not create duplicate entries in the symbol candidate set.
-  - ignores stale custom-symbol text when the symbol class is disabled, so an inactive control cannot block lowercase/uppercase/digit-only generation.
-  - preserves the existing default symbol set when no custom symbols are supplied.
-- `crates/keysmith-core/tests/security.rs`
-  - regression test rejects alphanumeric custom-symbol input.
-  - regression test rejects more than 40 custom-symbol characters.
-  - regression test verifies deduplication/ambiguity behavior by reducing `!!|` with ambiguity exclusion to `!`.
-  - regression test verifies disabled symbol mode ignores stale invalid custom-symbol text.
-  - regression test iterates every built-in preset and confirms it remains a valid generation policy after the stricter backend validation.
+The existing `#[cfg_attr(mobile, tauri::mobile_entry_point)]` remains the shared entry point for generated Android/iOS hosts.
 
-### 4. Clipboard secret-lifetime and IPC-duration hardening
+### 3. Cross-platform clipboard commands
 
-A clipboard error-path issue was found: the input `String` was explicitly zeroized on the success path and one explicit oversize path, but early errors while opening or writing the clipboard could return before the owned input buffer was zeroized. Direct IPC could also request arbitrary clear durations that did not match the documented UI choices.
-
-Changed exact paths:
+Changed:
 
 - `src-tauri/src/commands.rs`
-  - wraps the owned clipboard command secret in `zeroize::Zeroizing<String>` immediately on entry so normal return and early-error paths receive best-effort zeroization on drop.
-  - wraps the delayed comparison copy in `Zeroizing<String>` while the conditional clear timer is active.
-  - introduces the authoritative duration allowlist `[0, 15, 30, 60, 120]` seconds.
-  - rejects undocumented IPC clear durations instead of accepting arbitrary values and silently capping them.
-  - preserves the 4096-character clipboard input cap.
-  - preserves conditional clearing: KeySmith clears only if the clipboard still contains the expected copied secret.
-  - adds unit tests for accepted and rejected clipboard duration values.
-- `.github/workflows/ci.yml`
-  - desktop matrix now runs `cargo test -p keysmith --lib` on Windows, macOS, and Linux.
-  - desktop matrix now installs Clippy and runs `cargo clippy -p keysmith --all-targets -- -D warnings` so adapter warnings fail CI instead of being informational only.
 
-### 5. CI workflow consolidation
+Behavior now:
 
-A previously undocumented `.github/workflows/rust.yml` was discovered when the first v2.7.4 PR workflows became visible. It duplicated Rust build/test coverage on Ubuntu but did not install the Linux Tauri/WebKit system dependencies required by the workspace, making it both redundant and a likely source of misleading failures.
+- clipboard commands receive `tauri::AppHandle`,
+- `ClipboardExt` supplies the native platform clipboard implementation,
+- secret input remains wrapped in `Zeroizing<String>`,
+- clipboard input remains capped at 4096 characters,
+- accepted clear durations remain exactly `0`, `15`, `30`, `60`, and `120` seconds,
+- delayed auto-clear reads the clipboard and clears only if it still equals the copied value,
+- delayed comparison runs away from the initiating command path,
+- Clear clipboard now uses the same plugin path on desktop and mobile,
+- existing unit tests for accepted/rejected durations remain.
 
-Changed exact path:
+No platform-specific password-generation logic was introduced; all platforms still use `keysmith-core`.
 
-- `.github/workflows/rust.yml`
-  - removed completely.
-  - the maintained `.github/workflows/ci.yml` remains authoritative for Rust-core quality, cross-platform Tauri checks, desktop adapter Clippy/tests, frontend quality, and Rust dependency policy.
+### 4. Native cross-platform batch export
 
-Observed after removal on SHA `c46f8e8c`:
+Changed:
 
-- CI workflow queued with:
-  - `Frontend quality`,
-  - `Rust core quality`,
-  - `Rust dependency policy`,
-  - `Tauri check (ubuntu-22.04)`,
-  - `Tauri check (windows-latest)`,
-  - `Tauri check (macos-latest)`.
-- CodeQL workflow queued with:
-  - `analyze (javascript-typescript)`,
-  - `analyze (rust)`.
-- no replacement standalone `Rust` workflow was triggered on that SHA.
+- `src/api.ts`
+- `src/main.ts`
+- `src-tauri/capabilities/default.json`
+- `package.json`
 
-### 6. Security, privacy, contributor, GitHub, and release documentation updated
+The old browser-only Blob/object-URL/download-anchor flow was removed.
 
-Changed exact paths:
+New export flow:
 
-- `SECURITY.md`
-  - supported release line updated to `2.7.x`.
-  - older release lines are documented as unsupported for security fixes.
-- `PRIVACY.md`
-  - documents the exact non-secret preference keys.
-  - documents the frontend fallback and backend clipboard-duration allowlist.
-  - documents temporary in-memory copies across TypeScript, Rust, webview, and OS clipboard boundaries.
-  - clarifies that Rust `Zeroizing<String>` is best-effort and is not a claim that JavaScript strings, OS clipboard implementations, or all process memory can be erased on demand.
-  - documents clear-now semantics and plaintext batch-export persistence outside the memory-only secret policy.
-  - explicitly prohibits generated-secret logging/analytics under the current privacy model.
-- `THREAT_MODEL.md`
-  - adds malformed custom-symbol policy as a modeled threat.
-  - records the 40-character backend cap and character-category rejection.
-  - records ambiguity filtering and deduplication.
-  - records clipboard duration allowlisting and zeroizing wrappers.
-  - records release/version mismatch as a supply/release-integrity threat.
-  - adds corresponding abuse-case mitigations.
-- `docs/testing.md`
-  - documents Rust-core custom-symbol regression coverage.
-  - documents desktop-adapter clipboard-duration tests.
-  - documents `npm run version:check` and tag verification.
-  - documents desktop Clippy as a required static gate.
-  - distinguishes automated clipboard policy tests from manual OS clipboard integration testing.
-- `docs/release.md`
-  - replaces the short release checklist with a detailed release-candidate process.
-  - includes version consistency, frontend checks, Rust core checks, desktop checks/tests/Clippy, cargo-deny, CodeQL, package builds, smoke tests, screenshots, merge verification, tag verification, signing/notarization, and artifact review.
-  - adds the explicit v2.7.4 rule: final tag must be exactly `v2.7.4` and must not be created before the complete gate is green.
-- `docs/development.md`
-  - adds `npm run version:check` and exact Rust core/desktop verification commands.
-  - explicitly treats webview-to-Tauri IPC as an untrusted validation boundary.
-  - documents zeroization/error-path and security-regression expectations.
-  - documents every version-bearing path that must change for a release.
-- `docs/github.md`
-  - removes the stale `0.1 Secure MVP` / `0.2 Hardening` / `1.0 Stable` milestone plan.
-  - makes v2.7.4 release verification the current milestone.
-  - documents the actual maintained CI/CodeQL job names observed for the candidate.
-  - explicitly warns not to configure the removed legacy `Rust` workflow as a required check.
-  - documents release-branch/tag and branch-protection sequencing.
-- `ROADMAP.md`
-  - removes the stale 0.1/0.2/1.0 phase structure.
-  - makes v2.7.4 the current release candidate.
-  - separates completed candidate work from exact pre-tag blockers.
-  - keeps future hardening work focused on UI/accessibility automation, meaningful fuzz/property work, provenance/SBOM opportunities, and preserving KeySmith’s offline/no-history scope.
-- `README.md`
-  - identifies 2.7.4 as the current release-candidate line.
-  - adds release-candidate badge text.
-  - documents custom-symbol backend hardening.
-  - documents clipboard duration/zeroization hardening.
-  - documents the release-version integrity gate.
-  - removes stale “Phase 5” screenshot wording and states that real screenshots must come from verified v2.7.4 packaged builds.
-  - updates development/build command examples.
-- `CONTRIBUTING.md`
-  - aligns the contributor quality gate with v2.7.4 CI.
-  - adds version consistency, desktop Clippy/tests, IPC trust-boundary validation, security regression rules, release-status truthfulness, and exact version-bearing paths.
-- `.github/pull_request_template.md`
-  - expands verification checkboxes for frontend, version consistency, Rust core, desktop adapter, manual OS integration, regression tests, secret exclusion, documentation, and security/privacy/accessibility/release impact.
-  - adds an explicit “Remaining verification” section.
-- `.github/RELEASE_TEMPLATE.md`
-  - removes the stale “0.1 series” upgrade note.
-  - adds tag/manifest consistency, full CI/CodeQL, package/manual smoke tests, screenshots, signing/artifact checks, documentation updates, and known-limitations requirements.
-- `CHANGELOG.md`
-  - records the v2.7.4 added/changed/fixed/security details from this continuation.
-- `what_changed.md`
-  - this canonical ledger now records all work through the final documentation audit and the observed workflow state.
+1. user explicitly selects Export,
+2. native save dialog returns a user-selected path/URI,
+3. KeySmith writes the plaintext warning + generated batch through the Tauri filesystem plugin,
+4. KeySmith reads the destination back,
+5. success is reported only if the readback exactly equals the intended export text.
 
-## Existing implemented product scope retained
+This exact readback check is intentional. A current Android/document-provider edge case can return from a write path without preserving the intended file contents. KeySmith therefore refuses to display a false-success message when the selected destination does not preserve the requested text.
 
-### Repository and architecture
+Current least-privilege plugin permissions:
 
-- Rust 2024 workspace with framework-independent `crates/keysmith-core`.
-- Tauri 2 desktop adapter under `src-tauri`.
-- Vanilla TypeScript/Vite presentation layer under `src` plus `index.html`.
-- Windows, macOS, and Linux bundle configuration.
-- Apache-2.0 license and NOTICE.
-- public/open-source repository metadata, funding link, issue templates, pull-request template, Dependabot, CI, CodeQL, and release workflow.
-- strict design boundary: generated credentials are never intentionally persisted by application code.
-- architecture decisions under `docs/adr/`.
+- `dialog:allow-save`,
+- `fs:allow-write-text-file`,
+- `fs:allow-read-text-file`.
 
-### Password generation
+Broad filesystem directory permissions are not granted merely for export convenience.
 
-- operating-system CSPRNG through `getrandom`.
-- rejection sampling for unbiased bounded selection.
-- Fisher-Yates-style secure shuffle backed by the same unbiased sampler.
-- password length validation from 4 to 128 characters.
-- lowercase, uppercase, digit, and symbol controls.
-- custom symbols with v2.7.4 backend validation.
-- ambiguous-character exclusion.
-- at least one character from every enabled class.
-- batch generation from 1 to 500 passwords.
-- Balanced, Maximum, Legacy-compatible, and Alphanumeric presets.
+### 5. Android platform configuration
 
-### Passphrases and strength
+Added:
 
-- EFF large Diceware list through `eff_wordlist`.
-- 3–12 word selection.
-- separator validation, capitalization, and optional two-digit suffix.
-- selection-space entropy estimate.
-- zxcvbn strength scoring and guess estimates.
-- word-list source/selection model documented in `docs/wordlists.md`.
+- `src-tauri/tauri.android.conf.json`
 
-### Clipboard and exports
+Current policy:
 
-- explicit clipboard copy command through the Rust desktop adapter.
-- supported auto-clear settings: never, 15 seconds, 30 seconds, 1 minute, or 2 minutes.
-- backend v2.7.4 allowlist for those values.
-- auto-clear checks that the clipboard still equals the copied value before erasing it.
-- explicit clear-now action.
-- clipboard command rejects values over 4096 characters.
-- owned command/expected secret buffers use best-effort zeroizing wrappers where practical.
-- batch export is explicit plaintext with an in-product warning and warning header in the exported file.
+- product window label/title remains `main` / `KeySmith`,
+- desktop width/height/minimum-window constraints are not copied into the mobile override,
+- Android `minSdkVersion` is `24`.
 
-### UI/UX
+Package scripts added:
 
-- responsive desktop layout and reusable design tokens.
-- Password, Passphrase, and Batch tabs.
-- live strength presentation.
-- policy presets and safe defaults.
-- light, dark, and system themes.
-- first-run onboarding with a locally stored non-secret completion flag.
-- Settings surface covering appearance, privacy/data, accessibility, updates, and onboarding help.
-- About surface with version, Apache-2.0, support/business contacts, GitHub, Buy Me a Coffee, and `Made by the Sanskar`.
-- keyboard tab navigation, skip link, visible focus, semantic fieldsets/labels, aria-live status, reduced-motion support, responsive touch targets, and non-color-only status text.
-- editable SVG logo plus native PNG/ICO/ICNS application icons.
+- `android:init`
+- `android:dev`
+- `android:build:apk`
+- `android:build:aab`
 
-### Privacy/security baseline
+The generated Android Studio project under `src-tauri/gen/android` remains ignored and reproducible rather than committed as canonical source.
 
-- no account requirement.
-- no telemetry or analytics.
-- no password history.
-- no generation-time network dependency.
-- restrictive Tauri CSP.
-- explicit least-privilege Tauri capabilities and command permissions.
-- central typed Rust core errors with user-safe messages.
-- documented threat model and residual risks.
-- `.env.example` contains no credentials.
-- `deny.toml` provides Rust advisory/license/source policy.
-- CodeQL and dependency update automation are configured.
+### 6. iOS / iPadOS platform configuration
 
-## Automated tests currently present
+Added:
 
-### Rust core
+- `src-tauri/tauri.ios.conf.json`
 
-- `crates/keysmith-core/tests/security.rs`
-  - required enabled classes are represented,
-  - ambiguity exclusion,
-  - custom-symbol validation and boundaries,
-  - custom-symbol ambiguity/deduplication behavior,
-  - disabled custom-symbol state behavior,
-  - built-in preset validity,
-  - batch-size limits,
-  - passphrase word-count behavior.
-- `crates/keysmith-core/tests/properties.rs`
-  - generated length invariant across 4–128 characters,
-  - digits-only output invariant.
+Current policy:
 
-### Desktop adapter
+- product window label/title remains `main` / `KeySmith`,
+- desktop sizing constraints are not copied into the mobile override,
+- iOS minimum system version is `14.0`.
 
-- `src-tauri/src/commands.rs` test module
-  - all documented clipboard clear durations accepted,
-  - undocumented durations rejected.
+Package scripts added:
 
-### TypeScript
+- `ios:init`
+- `ios:dev`
+- `ios:build`
+- `ios:prepare`
 
-- `src/storage.test.ts`
-  - privacy-oriented clipboard default,
-  - supported clipboard duration persistence,
-  - invalid stored duration fallback,
-  - theme persistence,
-  - first-run onboarding state persistence.
+The generated Xcode project under `src-tauri/gen/apple` remains ignored and reproducible.
 
-## Documentation map
+### 7. iOS privacy manifest preparation
 
-Primary repository/project documentation currently includes:
+Added:
 
-- `README.md`
-- `LICENSE`
-- `NOTICE`
-- `CONTRIBUTING.md`
-- `CODE_OF_CONDUCT.md`
-- `SECURITY.md`
-- `SUPPORT.md`
-- `PRIVACY.md`
-- `THREAT_MODEL.md`
-- `CHANGELOG.md`
-- `ROADMAP.md`
-- `what_changed.md`
-- `docs/architecture.md`
-- `docs/setup.md`
-- `docs/development.md`
-- `docs/testing.md`
-- `docs/release.md`
-- `docs/troubleshooting.md`
-- `docs/accessibility.md`
-- `docs/performance.md`
-- `docs/github.md`
-- `docs/wordlists.md`
-- `docs/adr/0001-rust-core-tauri-ui.md`
-- `docs/adr/0002-os-csprng-and-no-secret-storage.md`
-- `.github/RELEASE_TEMPLATE.md`
+- `scripts/prepare-ios-privacy.mjs`
 
-## GitHub automation currently present
+The filesystem plugin's Apple file-timestamp API usage requires a privacy manifest approved-reason declaration. The script writes `src-tauri/gen/apple/PrivacyInfo.xcprivacy` with:
+
+- category `NSPrivacyAccessedAPICategoryFileTimestamp`,
+- reason `C617.1`.
+
+Run `npm run ios:prepare` after every `ios:init`/regeneration and before iOS build/release verification.
+
+### 8. Shared platform icon generation
+
+Added package script:
+
+- `icons:generate` → `tauri icon src/assets/logo.svg`
+
+`src/assets/logo.svg` remains the editable branding source. The icon command is run after generated Android/iOS project initialization so Android mipmaps and the iOS AppIcon set use KeySmith branding instead of generated defaults.
+
+### 9. Mobile development-server support
+
+Changed:
+
+- `vite.config.ts`
+
+The dev server now reads `TAURI_DEV_HOST`. When Tauri exposes a host for a connected physical mobile device, Vite:
+
+- binds to that host,
+- configures WebSocket HMR for the host,
+- keeps the existing port discipline.
+
+Production credential generation remains offline and does not depend on this development-network path.
+
+### 10. Mobile responsive/safe-area UI
+
+Added:
+
+- `src/mobile.css`
+
+Changed:
+
+- `index.html`
+
+Mobile adaptations include:
+
+- `viewport-fit=cover`,
+- safe-area inset handling for top/left/right/bottom,
+- `100dvh` behavior,
+- baseline 44px controls,
+- 48px coarse-pointer targets,
+- touch-friendly checkboxes/ranges,
+- scrollable dialogs constrained to the usable viewport,
+- narrow-screen button grids,
+- compact header controls,
+- accessible visually hidden brand text at very narrow widths,
+- preserved desktop keyboard/focus design from `src/styles.css`.
+
+About now lists:
+
+`Windows · macOS · Linux · Android · iOS`
+
+The application description now explicitly covers desktop and mobile.
+
+### 11. Deterministic five-platform source guard
+
+Added:
+
+- `scripts/check-platforms.mjs`
+- package script `platform:check`
+
+The guard fails if release-critical platform invariants drift, including:
+
+- Android/iOS/icon/preparation scripts missing,
+- clipboard/dialog/filesystem Rust plugins missing,
+- direct `arboard` application dependency restored,
+- plugin initialization missing,
+- Android SDK minimum changed unexpectedly,
+- iOS minimum version changed unexpectedly,
+- export save/write/readback permissions missing,
+- mobile viewport/safe-area CSS missing,
+- coarse-pointer touch rules missing,
+- five-platform About listing incomplete.
+
+### 12. Expanded GitHub Actions matrix
+
+Changed:
 
 - `.github/workflows/ci.yml`
-  - frontend typecheck/lint/text-hygiene/version-consistency/tests/build,
-  - Rust core format/Clippy/tests,
-  - Tauri `cargo check`, adapter Clippy, and adapter unit tests on Ubuntu, Windows, and macOS,
-  - cargo-deny dependency policy.
-- `.github/workflows/codeql.yml`
-  - JavaScript/TypeScript and Rust analysis.
-- `.github/workflows/release.yml`
-  - tag-triggered Windows/macOS/Linux draft release builds,
-  - tag-to-manifest version check before artifact generation.
-- `.github/dependabot.yml`
-  - Cargo, npm, and GitHub Actions updates.
-- `.github/workflows/rust.yml`
-  - removed as redundant legacy automation; do not restore it unless a materially distinct verification purpose is designed.
-- structured bug/feature issue forms and issue routing.
-- strengthened pull-request quality/security/release checklist.
-- modernized release template.
-- Buy Me a Coffee funding configuration.
 
-## Verification performed during this v2.7.4 continuation
+Shared/frontend job now runs:
 
-### Repository/GitHub verification
+- typecheck,
+- lint,
+- text-format hygiene,
+- version consistency,
+- platform consistency,
+- Vitest,
+- frontend build.
 
-- read the pre-existing `what_changed.md` before changing the repository.
-- inspected the latest `main` commit checkpoint (`374dea7e` — `docs: add development handoff and verification ledger`).
-- confirmed repository write/admin permissions through the connected GitHub integration.
-- created `release/v2.7.4` from the exact prior `main` checkpoint.
-- opened PR #13 against `main` so the candidate has a PR verification target.
-- PR #13 is currently reported as open and mergeable by the connected GitHub integration.
-- no open repository issues were returned by the connected issue search during this pass.
-- discovered the legacy `.github/workflows/rust.yml` when GitHub exposed an unexpected third workflow named `Rust` on an earlier candidate SHA.
-- removed that redundant workflow and observed that candidate SHA `c46f8e8c` then queued only the maintained `CI` and `CodeQL` workflows.
-- observed six maintained CI jobs and two CodeQL language jobs queued on `c46f8e8c` as listed above.
-- updated PR #13 body with the complete v2.7.4 scope, hardening details, and explicit release blockers.
+Rust core job remains:
 
-### Local executable verification available in the current environment
-
-The current shell has Node.js `v22.16.0` but no Rust/Cargo toolchain and no external network/DNS access. A direct `git clone` attempt against the public repository failed because the shell could not resolve `github.com`, confirming that the local shell cannot be used as a clean online build environment in this session.
-
-A local fixture reproducing the committed `scripts/check-version.mjs` logic was executed with Node.js:
-
-1. repository metadata values set to `2.7.4` → passed.
-2. `KEYSMITH_EXPECTED_VERSION=v2.7.4` → passed.
-3. `KEYSMITH_EXPECTED_VERSION=v2.7.5` → intentionally failed and the mismatch error was confirmed.
-
-This verifies the new Node release-version gate logic itself in the available environment.
-
-### Verification not truthfully claimable yet
-
-The current execution environment does not provide Cargo/Rust and cannot reach package registries, so the following have **not** been locally executed here:
-
-- Rust formatting.
-- Rust Clippy.
+- Rust formatting,
+- Rust core Clippy,
 - Rust core tests.
-- Tauri adapter check/Clippy/tests.
-- cargo-deny.
-- fresh npm dependency installation.
-- full frontend typecheck/lint/Vitest/Vite build using repository-installed dependencies.
-- native Tauri package builds.
 
-GitHub Actions is the authoritative clean verification path for these checks. Workflows were observed queued on an earlier candidate SHA after CI cleanup, but the final documentation commit must receive and complete its own runs before any green/stable claim is made.
+Desktop matrix now explicitly identifies itself as desktop and covers:
 
-## Known limitations / non-blocking design decisions
+- Ubuntu/Linux,
+- Windows,
+- macOS,
 
-- KeySmith intentionally has no password history or vault; it is a generator, not a password manager.
-- no cloud synchronization or telemetry is planned under the current privacy model.
-- batch exports are plaintext by design and intentionally warn the user.
-- clipboard security depends on the operating system; other processes or clipboard managers can observe clipboard contents before a clear operation.
-- JavaScript strings and operating-system clipboard APIs can create copies that cannot be reliably zeroized by application code; `Zeroizing<String>` is used for Rust-owned command buffers where practical but is not a claim of complete process-memory erasure.
-- no silent automatic update check is implemented because the app is offline by default; releases are distributed through the repository release process.
-- `Cargo.lock` and `package-lock.json` are still not present because trusted clean dependency resolution has not yet been captured in this execution path.
-- real screenshots remain deferred until the UI is launched from a verified packaged release candidate.
-- branch protection is not enabled yet; `docs/github.md` now documents the actual maintained job names observed during this v2.7.4 pass and the recommended rule sequence.
-- platform signing/notarization remains an external/protected-secret release operation and must never place private signing material in the repository.
+with native adapter check, Clippy, and library tests.
 
-## Next exact tasks
+New Android job:
 
-Continue in this order unless new CI evidence changes the priority:
+- Ubuntu hosted runner,
+- Node.js 22,
+- Java 17,
+- all four Rust Android targets installed,
+- modern hosted-runner NDK selected through `ANDROID_NDK_LATEST_HOME`,
+- non-interactive Android project initialization,
+- KeySmith icon generation,
+- aarch64 debug APK compilation.
 
-1. Re-read this ledger and fetch the current PR #13 head before changing anything.
-2. Inspect CI and CodeQL for the **exact latest PR head**, not an earlier candidate SHA.
-3. Read every failed job/step log and fix the root cause; add a regression test whenever behavior/security is involved.
-4. Repeat until `Frontend quality`, `Rust core quality`, `Rust dependency policy`, all three `Tauri check (...)` jobs, and both CodeQL language jobs are green on the same candidate SHA.
-5. Generate trusted `Cargo.lock` and `package-lock.json` from clean dependency resolution and commit them if the resolved dependency graph is suitable.
-6. Build/package Tauri v2.7.4 on Windows, macOS, and Linux.
-7. Smoke-test password generation, all built-in presets, custom-symbol validation, ambiguity exclusion, passphrases, batch generation/export, clipboard copy, each supported auto-clear duration, conditional clear behavior, clear-now, onboarding, settings, themes, keyboard flow, reduced motion, and About/support/funding links from packaged applications.
-8. Capture real release screenshots and update the README/documentation with only genuine captures from the verified candidate.
-9. Enable `main` branch protection using the exact successful check names proven by GitHub Actions; do not add the removed legacy `Rust` workflow.
-10. Update this ledger with final CI/build/smoke-test evidence and exact artifact information.
-11. Merge PR #13 only after the candidate release gate is satisfied, then verify the `main` merge commit.
-12. Create the exact `v2.7.4` tag only after the merge commit and version metadata are verified.
-13. Let the release workflow create draft artifacts; verify version, artifact completeness, signing/notarization status, and installation behavior before publishing.
+New iOS job:
 
-## Migration notes
+- macOS hosted runner,
+- Node.js 22,
+- iOS device/simulator Rust targets,
+- non-interactive iOS project initialization,
+- KeySmith icon generation,
+- iOS privacy-manifest preparation,
+- arm64 simulator debug compilation.
 
-There is no credential database and therefore no secret-data migration. Non-secret local preferences currently use:
+Cargo dependency policy remains a separate CI job. CodeQL remains separate for JavaScript/TypeScript and Rust.
+
+A green mobile compile job proves the project/toolchain path compiles; it does not replace physical-device/store-signing smoke testing.
+
+## Documentation updated for the five-platform model
+
+Updated:
+
+- `README.md`
+  - five native targets,
+  - Android/iOS quick start/build commands,
+  - mobile-safe clipboard/export implementation,
+  - cross-platform CI distinction,
+  - truthful configured-vs-verified wording.
+- `docs/setup.md`
+  - Windows/macOS/Linux setup,
+  - Android Studio/SDK/NDK/Rust target setup,
+  - Android init/dev/APK/AAB commands,
+  - iOS Xcode/Rust target setup,
+  - iOS init/dev/build/privacy preparation,
+  - generated-project policy,
+  - mobile dev-network guidance,
+  - signing-secret rules.
+- `docs/development.md`
+  - shared + mobile commands,
+  - five-platform dependency/plugin rules,
+  - generated-project policy,
+  - native capability review flow,
+  - full cross-platform completion rule.
+- `docs/testing.md`
+  - five-platform automated matrix,
+  - Android/iOS CI expectations,
+  - mobile UI checks,
+  - platform clipboard checks,
+  - native export/readback checks.
+- `docs/release.md`
+  - five-platform release gate,
+  - per-platform build paths,
+  - Android signing/AAB requirements,
+  - iOS privacy/signing/distribution requirements,
+  - mobile safe-area/icon/export smoke checklist.
+- `docs/architecture.md`
+  - one shared Rust core + shared responsive UI,
+  - native plugin boundaries,
+  - generated mobile projects,
+  - export/readback data flow,
+  - mobile development host,
+  - iOS privacy manifest,
+  - five-platform verification boundary.
+- `PRIVACY.md`
+  - Android/iOS clipboard and document-provider boundaries,
+  - temporary runtime copies,
+  - scoped export/readback,
+  - generated mobile projects,
+  - development-only network behavior,
+  - release-signing data exclusions.
+- `THREAT_MODEL.md`
+  - mobile webview, dev host, clipboard, document-provider, generated-project, Android NDK, iOS privacy, safe-area, and signing threats/residual risks.
+- `CHANGELOG.md`
+  - records all cross-platform v2.7.4 work and the remaining verification boundary.
+- `ROADMAP.md`
+  - makes v2.7.4 a five-platform candidate and tracks exact desktop/mobile pre-release blockers.
+- `CONTRIBUTING.md`
+  - requires contributors to preserve the five-platform architecture and run `platform:check`.
+- `.github/RELEASE_TEMPLATE.md`
+  - adds Windows/macOS/Linux/Android/iOS automated/package/manual release checklists.
+- `what_changed.md`
+  - this handoff.
+
+## Existing security/product behavior preserved
+
+The cross-platform work did not replace the security core or weaken existing policy behavior. KeySmith still provides:
+
+- OS-backed CSPRNG through `getrandom`,
+- rejection sampling for unbiased bounded selection,
+- secure shuffle,
+- length 4–128 password generation,
+- required enabled character classes,
+- custom-symbol validation/deduplication,
+- ambiguity exclusion,
+- 1–500 batch generation,
+- EFF large Diceware passphrases (3–12 words),
+- zxcvbn strength estimates,
+- no accounts,
+- no telemetry/analytics,
+- no generated-secret history,
+- no cloud synchronization,
+- explicit plaintext export warnings,
+- explicit clipboard use,
+- conditional clipboard auto-clear,
+- restrictive Tauri CSP,
+- least-privilege capabilities,
+- non-secret preference-only local storage.
+
+Current non-secret preference keys remain:
 
 - `keysmith.clipboardClearSeconds`
 - `keysmith.theme`
 - `keysmith.onboardingComplete`
 
-The v2.7.4 backend now rejects undocumented clipboard duration values presented directly over IPC, while persisted frontend values already fall back to the safe 30-second default when invalid.
+## Important platform limitations / release truthfulness
 
-The v2.7.4 backend also enforces custom-symbol policy independently of the UI. Integrations invoking Tauri commands directly must supply no more than 40 custom symbols and must not use alphanumeric, whitespace, or control characters for the custom-symbol class.
+- Windows/macOS/Linux/Android/iOS are now first-class native source/configuration targets.
+- Android/iOS must not be described as release-verified until the expanded PR CI and mobile smoke tests pass on the exact candidate.
+- iOS release/device/App Store builds require macOS/Xcode and protected Apple signing/provisioning credentials.
+- Android store distribution requires protected Android signing credentials and the appropriate Play distribution process.
+- Android release tooling should use a current NDK suitable for modern native-library page-size requirements; setup/release docs require NDK 28+.
+- Mobile OS clipboard behavior can evolve; KeySmith does not attempt to bypass platform privacy protections.
+- Mobile document providers can have provider-specific behavior. Exact write/readback verification prevents false success but cannot guarantee a provider will never corrupt/delete a file later.
+- Generated Android Studio/Xcode projects are ignored and recreated from committed source/configuration.
+- JavaScript strings, OS clipboard services, document providers, and general process memory cannot be guaranteed to be zeroized; Rust-owned buffers use best-effort zeroization where practical.
+- Browser/PWA support is a separate architecture and is not being mislabeled as a native Tauri target.
 
-Future preference schema changes must preserve safe defaults and must never turn local preference storage into a generated-secret history.
+## Cross-platform commits in this continuation
 
-## Release notes draft — v2.7.4
+Native/mobile integration:
 
-KeySmith v2.7.4 is the active release candidate for the offline-first desktop password and passphrase generator. It combines OS-backed cryptographic randomness, EFF Diceware passphrases, zxcvbn strength estimates, policy presets, batch generation, guarded plaintext export, conditional clipboard auto-clear, first-run onboarding, complete privacy/accessibility/settings surfaces, cross-platform Tauri packaging configuration, security documentation, and automated quality/security workflows.
+- `9f0b6311` — `feat: use cross-platform Tauri clipboard plugin`
+- `bd6046d4` — `feat: initialize clipboard plugin on desktop and mobile`
+- `dd9d0d2b` — `feat: make clipboard commands mobile compatible`
+- `e55353a4` — `feat: add mobile-safe export plugins`
+- `0aac4660` — `feat: initialize cross-platform export plugins`
+- `0fde6bfa` — `feat: allow cross-platform save export permissions`
+- `7063df19` — `feat: add Android iOS and export scripts`
+- `b713cdab` — `feat: add native cross-platform text export API`
+- `e6f413f2` — `feat: make batch export native on all platforms`
+- `a2ce8e24` — `fix: verify cross-platform batch export contents`
+- `0fc3ce29` — `security: allow export verification readback`
 
-The v2.7.4 hardening pass adds backend enforcement for custom-symbol policy boundaries, deduplicates custom symbols, preserves ambiguity exclusion for custom input, adds best-effort zeroizing ownership around clipboard command buffers, restricts IPC clipboard timers to documented values, adds desktop adapter regression tests/Clippy enforcement, prevents release tags from disagreeing with frontend/Rust/Tauri/UI version metadata, removes a redundant legacy Rust workflow, and aligns contributor/privacy/GitHub/release documentation with the maintained release gate.
+Platform configuration/UI/build tooling:
 
-No account, telemetry, cloud sync, or password-history service is included.
+- `1ae9e2a7` — `feat: support Tauri mobile dev hosts`
+- `799f7be3` — `feat: add Android platform configuration`
+- `286d3792` — `feat: add iOS platform configuration`
+- `71e3d3a0` — `feat: make UI metadata mobile aware`
+- `3c39f52e` — `feat: add mobile safe-area and touch layout`
+- `6c806707` — `feat: load mobile layout adaptations`
+- `f643d313` — `build: generate required iOS privacy manifest`
+- `07aa740b` — `test: add cross-platform configuration guard`
+- `cbafccca` — `build: expose mobile verification and iOS preparation`
+- `fbb8a84e` — `ci: add Android and iOS build verification`
+- `398de3ea` — `build: add all-platform icon generation`
+- `43b9d976` — `ci: verify generated mobile branding assets`
+- `976333ad` — `test: strengthen cross-platform configuration guard`
 
-Do not publish these notes as a final stable-release claim until the complete CI, CodeQL, packaging, signing/notarization, smoke-test, screenshot, and artifact-verification gates are satisfied.
+Documentation:
 
-## Meaningful commits in the v2.7.4 continuation
+- `ce9a9540` — `docs: document five-platform native support`
+- `890fc579` — `docs: add Android and iOS setup guide`
+- `989d27b4` — `docs: extend release gate to Android and iOS`
+- `c35c113b` — `docs: document five-platform test matrix`
+- `d2a46bea` — `docs: describe shared desktop and mobile architecture`
+- `a5f3cc30` — `docs: extend privacy model to mobile platforms`
+- `dee6eff7` — `docs: extend threat model across mobile boundaries`
+- `b2fbc944` — `docs: record full cross-platform v2.7.4 work`
+- `76bdc0ac` — `docs: align roadmap with five-platform release`
+- `ae6282f3` — `docs: add mobile development workflow`
+- `4fc4330b` — `docs: make contribution gate cross-platform`
+- `05622466` — `docs: expand release checklist to mobile`
 
-Version/release metadata:
+## Verification state at this handoff commit
 
-- `33092530` — `chore: set frontend version to 2.7.4`
-- `cfedd374` — `chore: set Rust workspace version to 2.7.4`
-- `63562710` — `chore: set Tauri bundle version to 2.7.4`
-- `f5607938` — `chore: update in-app version labels to 2.7.4`
-- `ddef2f7b` — `docs: prepare v2.7.4 changelog`
-- `a20364b0` — `docs: define v2.7 security support policy`
+Source/configuration invariants were implemented based on current official Tauri platform/plugin/CLI requirements and current Android/iOS release requirements. The current branch has **not yet been declared green** because this handoff is being written before opening the final verification PR.
 
-Version/release integrity:
+The next action must be to open a PR from `feat/full-cross-platform` into `main`, inspect CI + CodeQL on the exact head, and fix any real failures. Do not infer success from configuration alone.
 
-- `ec7f3634` — `build: add release version consistency check`
-- `0faadf1a` — `build: expose version consistency npm task`
-- `935e1b3b` — `ci: enforce release version consistency`
-- `4733527a` — `build: validate release tag against manifest version`
-- `4431809f` — `ci: block release tags with mismatched versions`
+## Next exact tasks
 
-Custom-symbol hardening:
-
-- `fb1e6681` — `fix: add custom symbol validation error`
-- `052233f5` — `fix: validate and deduplicate custom symbols`
-- `2882efec` — `test: cover custom symbol policy hardening`
-- `6c91ee16` — `fix: clarify custom symbol validation error`
-- `488fe6a0` — `test: keep built-in presets valid under policy hardening`
-
-Clipboard/desktop hardening:
-
-- `fc5c5e4a` — `fix: harden clipboard secret lifetime and duration validation`
-- `cd40e016` — `test: cover clipboard clear duration policy`
-- `43d9d91f` — `ci: run desktop adapter unit tests`
-- `51fd0472` — `ci: enforce desktop adapter clippy warnings`
-
-CI consolidation:
-
-- `c46f8e8c` — `ci: remove redundant legacy Rust workflow`
-
-Documentation alignment:
-
-- `95ddeb5c` — `docs: document v2.7.4 security hardening`
-- `6d0f6017` — `docs: expand v2.7.4 testing strategy`
-- `1407aef5` — `docs: define reproducible v2.7.4 release gate`
-- `390eb2d7` — `docs: align roadmap with v2.7.4 release candidate`
-- `2eb3d84c` — `docs: refresh README for v2.7.4`
-- `8b4e8152` — `docs: document v2.7.4 development and versioning rules`
-- `5b167df4` — `docs: record v2.7.4 hardening fixes`
-- `a2fac9dc` — `docs: include desktop clippy in test matrix`
-- `f0e5733c` — `docs: add desktop clippy development gate`
-- `81a86748` — `docs: add desktop clippy to release gate`
-- `5acf81ee` — `docs: record complete v2.7.4 handoff`
-- `aae1fdc6` — `docs: align contributing guide with v2.7.4 gates`
-- `441202c4` — `docs: strengthen pull request verification checklist`
-- `b33902d4` — `docs: align GitHub operations with v2.7.4`
-- `b7b30386` — `docs: modernize release template for v2.7.4`
-- `b0679f9c` — `docs: clarify v2.7.4 privacy boundaries`
+1. Open the cross-platform PR against `main`.
+2. Confirm the exact PR head SHA.
+3. Inspect all CI/CodeQL workflow runs for that exact SHA.
+4. Fix any frontend/platform-check/Rust/desktop/Android/iOS/dependency/CodeQL failures at their root cause.
+5. Repeat until the exact candidate SHA is green for:
+   - Frontend quality,
+   - Rust core quality,
+   - Windows desktop,
+   - macOS desktop,
+   - Linux desktop,
+   - Android mobile build,
+   - iOS simulator build,
+   - Rust dependency policy,
+   - JavaScript/TypeScript CodeQL,
+   - Rust CodeQL.
+6. Generate/commit trusted lockfiles if the clean build process produces suitable lockfiles and repository policy chooses to track them.
+7. Run packaged-app smoke tests on Windows/macOS/Linux.
+8. Run Android emulator/device smoke tests, including clipboard conditional clear and native export/readback.
+9. Run iOS simulator/device smoke tests, including privacy manifest, clipboard behavior, export/readback, safe areas, and touch layout.
+10. Capture real screenshots from verified builds.
+11. Configure branch protection using the proven final required-check names.
+12. Update this ledger with final CI/device/package evidence before final release publication.
+13. Keep Android/Apple signing secrets outside the repository and use protected release channels.
 
 ## Commit identity
 
-Continue project-maintainer commits using `Sanskar <sanskarin@outlook.in>` / commit email `sanskarin@outlook.in` where the connected GitHub identity permits explicit attribution.
+Project-maintainer commits should continue using `Sanskar <sanskarin@outlook.in>` / `sanskarin@outlook.in` where the tool/client permits explicit author configuration. GitHub API-created commits may use the authenticated GitHub identity because the connector does not expose author-email override fields.
