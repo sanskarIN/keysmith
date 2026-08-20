@@ -18,15 +18,24 @@ function hasNativeBridge(): boolean {
 function configureBrowserShell(): void {
   if (hasNativeBridge()) return;
 
+  const baseUrl = import.meta.env.BASE_URL;
   if (!document.querySelector<HTMLLinkElement>('link[rel="manifest"]')) {
     const manifest = document.createElement("link");
     manifest.rel = "manifest";
-    manifest.href = "/manifest.webmanifest";
+    manifest.href = `${baseUrl}manifest.webmanifest`;
     document.head.append(manifest);
   }
 
+  const platformTerm = Array.from(document.querySelectorAll<HTMLElement>("dt")).find(
+    (node) => node.textContent === "Platforms",
+  );
+  const platformValue = platformTerm?.nextElementSibling;
+  if (platformValue instanceof HTMLElement && !platformValue.textContent?.includes("Web/PWA")) {
+    platformValue.textContent = `${platformValue.textContent ?? ""} · Web/PWA · ChromeOS`;
+  }
+
   if (import.meta.env.PROD && "serviceWorker" in navigator) {
-    void navigator.serviceWorker.register("/sw.js").catch(() => {
+    void navigator.serviceWorker.register(`${baseUrl}sw.js`).catch(() => {
       // Generation still works online if service-worker installation is unavailable.
     });
   }
