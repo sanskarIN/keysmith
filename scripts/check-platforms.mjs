@@ -28,14 +28,15 @@ const android = JSON.parse(androidText);
 const ios = JSON.parse(iosText);
 
 for (const script of [
+  "icons:generate",
   "android:init",
   "android:dev",
   "android:build:apk",
   "android:build:aab",
   "ios:init",
+  "ios:prepare",
   "ios:dev",
   "ios:build",
-  "ios:prepare",
 ]) {
   assert(typeof packageJson.scripts?.[script] === "string", `Missing npm script: ${script}`);
 }
@@ -59,9 +60,11 @@ assert(ios.bundle?.iOS?.minimumSystemVersion === "14.0", "iOS minimumSystemVersi
 const permissions = new Set(capability.permissions ?? []);
 assert(permissions.has("dialog:allow-save"), "Save dialog permission is missing");
 assert(permissions.has("fs:allow-write-text-file"), "Text export permission is missing");
+assert(permissions.has("fs:allow-read-text-file"), "Export verification read permission is missing");
 
 assert(htmlText.includes("viewport-fit=cover"), "Mobile viewport safe-area support is missing");
 assert(htmlText.includes("/src/mobile.css"), "Mobile stylesheet is not loaded");
+assert(htmlText.includes("Windows · macOS · Linux · Android · iOS"), "About platform list is incomplete");
 assert(mobileCss.includes("env(safe-area-inset-top)"), "Mobile safe-area CSS is missing");
 assert(mobileCss.includes("@media (pointer: coarse)"), "Touch-target CSS is missing");
 
