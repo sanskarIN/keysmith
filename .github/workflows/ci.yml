@@ -22,6 +22,7 @@ jobs:
       - run: npm run lint
       - run: npm run format:check
       - run: npm run version:check
+      - run: npm run platform:check
       - run: npm test
       - run: npm run build
 
@@ -39,7 +40,7 @@ jobs:
       - run: cargo test -p keysmith-core --all-features
 
   desktop-check:
-    name: Tauri check (${{ matrix.os }})
+    name: Tauri desktop (${{ matrix.os }})
     strategy:
       fail-fast: false
       matrix:
@@ -63,6 +64,48 @@ jobs:
       - run: cargo check -p keysmith --all-targets
       - run: cargo clippy -p keysmith --all-targets -- -D warnings
       - run: cargo test -p keysmith --lib
+
+  android-check:
+    name: Tauri mobile (Android)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
+      - uses: Swatinem/rust-cache@v2
+      - name: Use 16KB-page-compatible Android NDK
+        shell: bash
+        run: |
+          test -n "$ANDROID_NDK_LATEST_HOME"
+          echo "NDK_HOME=$ANDROID_NDK_LATEST_HOME" >> "$GITHUB_ENV"
+      - run: npm install
+      - run: npm run android:init -- --ci --skip-targets-install
+      - run: npm run android:build:apk -- --debug --target aarch64 --ci
+
+  ios-check:
+    name: Tauri mobile (iOS simulator)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-ios,aarch64-apple-ios-sim,x86_64-apple-ios
+      - uses: Swatinem/rust-cache@v2
+      - run: npm install
+      - run: npm run ios:init -- --ci --skip-targets-install
+      - run: npm run ios:prepare
+      - run: npm run ios:build -- --debug --target aarch64-sim --ci
 
   dependency-policy:
     name: Rust dependency policy
