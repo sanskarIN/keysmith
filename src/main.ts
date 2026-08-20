@@ -1,4 +1,5 @@
 import "./styles.css";
+import "./mobile.css";
 import { api } from "./api";
 import { en } from "./i18n/en";
 import {
