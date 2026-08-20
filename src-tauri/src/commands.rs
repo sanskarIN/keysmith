@@ -1,12 +1,13 @@
 use keysmith_core::{
-    PassphraseOptions, PasswordOptions, StrengthEstimate, estimate_strength, generate_batch,
-    generate_passphrase, generate_password, presets,
+    MAX_BATCH_SIZE, MAX_PASSWORD_LENGTH, PassphraseOptions, PasswordOptions, StrengthEstimate,
+    estimate_strength, generate_batch, generate_passphrase, generate_password, presets,
 };
 use serde::Serialize;
 use std::{thread, time::Duration};
 use zeroize::Zeroizing;
 
 const SUPPORTED_CLIPBOARD_CLEAR_SECONDS: [u64; 5] = [0, 15, 30, 60, 120];
+const MAX_CLIPBOARD_CHARACTERS: usize = (MAX_PASSWORD_LENGTH + 1) * MAX_BATCH_SIZE - 1;
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -71,12 +72,23 @@ fn validate_clipboard_clear_seconds(clear_after_seconds: u64) -> Result<(), Stri
     }
 }
 
+fn validate_clipboard_value(value: &str) -> Result<(), String> {
+    if value
+        .chars()
+        .take(MAX_CLIPBOARD_CHARACTERS + 1)
+        .count()
+        > MAX_CLIPBOARD_CHARACTERS
+    {
+        Err("clipboard value is too large".to_owned())
+    } else {
+        Ok(())
+    }
+}
+
 #[tauri::command]
 pub fn copy_secret_command(secret: String, clear_after_seconds: u64) -> Result<(), String> {
     let secret = Zeroizing::new(secret);
-    if secret.chars().count() > 4096 {
-        return Err("clipboard value is too large".to_owned());
-    }
+    validate_clipboard_value(secret.as_str())?;
     validate_clipboard_clear_seconds(clear_after_seconds)?;
 
     let mut clipboard =
@@ -111,7 +123,10 @@ pub fn clear_clipboard_command() -> Result<(), String> {
 
 #[cfg(test)]
 mod tests {
-    use super::{SUPPORTED_CLIPBOARD_CLEAR_SECONDS, validate_clipboard_clear_seconds};
+    use super::{
+        MAX_CLIPBOARD_CHARACTERS, SUPPORTED_CLIPBOARD_CLEAR_SECONDS,
+        validate_clipboard_clear_seconds, validate_clipboard_value,
+    };
 
     #[test]
     fn documented_clipboard_durations_are_supported() {
@@ -125,5 +140,17 @@ mod tests {
         for seconds in [1, 14, 16, 300, u64::MAX] {
             assert!(validate_clipboard_clear_seconds(seconds).is_err());
         }
+    }
+
+    #[test]
+    fn largest_valid_batch_fits_clipboard_policy() {
+        let value = "x".repeat(MAX_CLIPBOARD_CHARACTERS);
+        assert!(validate_clipboard_value(&value).is_ok());
+    }
+
+    #[test]
+    fn clipboard_policy_rejects_values_beyond_largest_batch() {
+        let value = "x".repeat(MAX_CLIPBOARD_CHARACTERS + 1);
+        assert!(validate_clipboard_value(&value).is_err());
     }
 }
