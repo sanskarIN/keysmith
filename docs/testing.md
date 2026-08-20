@@ -12,7 +12,12 @@ The custom-symbol regression coverage verifies that:
 - explicit ambiguity exclusion also applies to custom symbols,
 - stale custom-symbol text is ignored when the symbol class is disabled.
 
-The passphrase regression coverage verifies the requested word count and locks the entropy calculation to the current 8,192-entry selection space: 13 bits per uniformly sampled word before optional suffix entropy.
+The passphrase regression coverage verifies:
+
+- the requested word count,
+- the exact 8,192-entry table size,
+- uniqueness of all 8,192 entries so duplicate words cannot silently reduce the effective selection space,
+- the entropy calculation of 13 bits per uniformly sampled word before optional suffix entropy.
 
 ## Desktop adapter
 
