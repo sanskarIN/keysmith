@@ -11,6 +11,8 @@ All notable changes follow a Keep a Changelog style and Semantic Versioning.
 - Applied the Rust 1.97.1 formatter output required by the release-candidate quality gate.
 - Corrected workspace Clippy lint priorities so explicit allow/deny overrides remain deterministic under `-D warnings` on Rust 1.97.1.
 - Removed the `eff-wordlist` dependency after the release-candidate license audit found missing crates.io license metadata and an avoidable AGPL compatibility risk for the Apache-2.0 application.
+- Fixed the valid Batch-mode `Copy all` path so a maximum 500 × 128-character batch is no longer rejected by the desktop clipboard boundary. The size cap remains enforced and is derived from the core generation limits.
+- Updated the in-product passphrase source description so it no longer identifies the removed dependency's 7,776-entry Diceware list.
 
 ### Changed
 - Passphrase generation now samples the 8,192-entry `englishid::WORD_LIST` table, an EFF-derived list distributed by EnglishId under MIT OR Apache-2.0. Uniform selection provides exactly 13 bits per sampled word.
@@ -21,7 +23,9 @@ All notable changes follow a Keep a Changelog style and Semantic Versioning.
 - GitHub checkout and Node setup actions now use their current v7 major lines.
 - Advanced CodeQL analysis now uses the current v4 action major for both JavaScript/TypeScript and Rust scanning.
 - The tag-triggered desktop release workflow now uses `tauri-apps/tauri-action@v1` and includes `xdg-utils` in the Linux packaging prerequisites.
+- Superseded pull-request CI and CodeQL runs are cancelled through workflow concurrency groups so only the newest candidate consumes runner capacity.
 - Passphrase dependency attribution and word-list documentation now describe the actual EFF-derived source and licensing boundary.
+- Core maximum password-length and batch-size constants are exported so desktop IPC bounds can reuse the authoritative generation policy instead of duplicating magic numbers.
 
 ## [2.7.4] - 2026-08-20
 
