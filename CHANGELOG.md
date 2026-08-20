@@ -18,7 +18,9 @@ All notable changes follow a Keep a Changelog style and Semantic Versioning.
 - CI now uses `npm ci` and locked Cargo commands instead of resolving dependency graphs opportunistically.
 - Release builds now reject a stale Cargo lockfile before packaging.
 - The v2.7.4 Rust toolchain is pinned to 1.97.1 so local formatting/lint behavior and CI/release behavior do not drift with the floating stable channel.
-- GitHub checkout and Node setup actions now use their Node-24-backed v7 major lines, removing the Node 20 deprecation warnings observed during candidate verification.
+- GitHub checkout and Node setup actions now use their current v7 major lines.
+- Advanced CodeQL analysis now uses the current v4 action major for both JavaScript/TypeScript and Rust scanning.
+- The tag-triggered desktop release workflow now uses `tauri-apps/tauri-action@v1` and includes `xdg-utils` in the Linux packaging prerequisites.
 - Passphrase dependency attribution and word-list documentation now describe the actual EFF-derived source and licensing boundary.
 
 ## [2.7.4] - 2026-08-20
