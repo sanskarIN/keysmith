@@ -20,6 +20,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           ref: fix/v2.7.4-ci
+          fetch-depth: 0
       - uses: dtolnay/rust-toolchain@1.97.1
       - name: Generate Cargo lockfile
         run: cargo generate-lockfile
@@ -30,4 +31,5 @@ jobs:
           git add Cargo.lock
           git rm .github/workflows/bootstrap-cargo-lock.yml
           git commit -m "build: refresh Cargo lockfile after license-safe dependency swap"
+          git pull --rebase origin fix/v2.7.4-ci
           git push origin HEAD:fix/v2.7.4-ci
