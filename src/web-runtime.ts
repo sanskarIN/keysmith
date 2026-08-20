@@ -19,7 +19,7 @@ let runtimePromise: Promise<WasmRuntime> | null = null;
 async function loadRuntime(): Promise<WasmRuntime> {
   if (!runtimePromise) {
     runtimePromise = (async () => {
-      const modulePath = "/wasm/keysmith_web.js";
+      const modulePath = `${import.meta.env.BASE_URL}wasm/keysmith_web.js`;
       const runtime = (await import(/* @vite-ignore */ modulePath)) as WasmRuntime;
       await runtime.default();
       return runtime;
