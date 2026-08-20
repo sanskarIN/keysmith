@@ -1,3 +1,5 @@
+import { save } from "@tauri-apps/plugin-dialog";
+import { writeTextFile } from "@tauri-apps/plugin-fs";
 import type {
   PassphraseOptions,
   PassphraseResult,
@@ -9,7 +11,7 @@ import type {
 function invoke<T>(command: string, args?: Record<string, unknown>): Promise<T> {
   if (!window.__TAURI__?.core?.invoke) {
     return Promise.reject(
-      new Error("KeySmith desktop bridge is unavailable. Run the app through Tauri."),
+      new Error("KeySmith native bridge is unavailable. Run the app through Tauri."),
     );
   }
   return window.__TAURI__.core.invoke<T>(command, args);
@@ -33,5 +35,14 @@ export const api = {
   },
   clearClipboard(): Promise<void> {
     return invoke("clear_clipboard_command");
+  },
+  async exportTextFile(suggestedName: string, content: string): Promise<boolean> {
+    const path = await save({
+      defaultPath: suggestedName,
+      filters: [{ name: "Plain text", extensions: ["txt"] }],
+    });
+    if (!path) return false;
+    await writeTextFile(path, content);
+    return true;
   },
 };
