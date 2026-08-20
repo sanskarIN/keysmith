@@ -16,11 +16,11 @@ pub fn generate_passphrase(options: &PassphraseOptions) -> Result<String, KeySmi
         return Err(KeySmithError::InvalidSeparator);
     }
 
-    let list = eff_wordlist::large::LIST;
+    let list = &englishid::WORD_LIST;
     let mut words = Vec::with_capacity(options.words);
     for _ in 0..options.words {
         let index = random::uniform_index(list.len())?;
-        let word = list[index].1;
+        let word = list[index];
         words.push(if options.capitalize {
             capitalize_ascii(word)
         } else {
@@ -37,7 +37,7 @@ pub fn generate_passphrase(options: &PassphraseOptions) -> Result<String, KeySmi
 }
 
 pub fn estimated_passphrase_entropy_bits(options: &PassphraseOptions) -> f64 {
-    let per_word = (eff_wordlist::large::LIST.len() as f64).log2();
+    let per_word = (englishid::WORD_LIST.len() as f64).log2();
     let number_bits = if options.include_number {
         100_f64.log2()
     } else {
