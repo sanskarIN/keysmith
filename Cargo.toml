@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/keysmith-core", "src-tauri"]
+members = ["crates/keysmith-core", "crates/keysmith-web", "src-tauri"]
 resolver = "2"
 
 [workspace.package]
