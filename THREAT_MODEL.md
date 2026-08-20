@@ -26,20 +26,25 @@ This model covers local password/passphrase generation, Tauri IPC, clipboard use
 | Predictable passwords | OS CSPRNG plus rejection sampling; required-class inclusion; security tests | Compromised OS RNG is out of scope |
 | Modulo bias | Rejection sampling over the full `u64` range | Negligible when implementation is correct |
 | Weak policy configuration | Validation, presets, zxcvbn feedback | Users can intentionally choose weak settings |
+| Malformed custom-symbol policy | Backend caps custom symbols at 40, rejects alphanumeric/whitespace/control input, removes ambiguous characters when requested, and deduplicates symbols | Unicode display confusables outside the explicit ambiguity set can still look similar |
 | Secret leakage in logs | No password logging or analytics; review policy | External debuggers/process inspection are out of scope |
-| Clipboard exposure | Explicit copy, optional conditional auto-clear | Other apps/clipboard managers may read clipboard before clear |
+| Clipboard exposure | Explicit copy, supported-duration allowlist, optional conditional auto-clear, and zeroizing wrappers for owned command buffers | Other apps/clipboard managers may read clipboard before clear; OS clipboard APIs necessarily receive a copy |
 | Clipboard data destruction | Clear only when clipboard still equals copied secret | Race conditions outside app control remain possible |
 | XSS/webview compromise | No remote content, restrictive CSP, local assets | Tauri/webview vulnerabilities remain dependency risk |
 | Overprivileged IPC | Small command surface and capability permissions | Future commands require review |
 | Plaintext batch export | Warning and explicit action | User-selected storage may be insecure |
 | Dependency compromise | Dependabot, CodeQL, cargo-deny policy, review | Supply-chain risk cannot be eliminated |
+| Release/version mismatch | CI checks frontend, Rust workspace, Tauri, and visible UI version metadata; release tags are compared with repository metadata | A release must still pass the complete CI and packaging gate |
 
 ## Abuse cases
 
 - Generating huge batches to exhaust memory: capped at 500.
 - Oversized clipboard inputs: command rejects values over 4096 characters.
+- Undocumented clipboard clear durations: rejected by the desktop adapter instead of creating arbitrary secret-retention timers.
+- Oversized or malformed custom-symbol input: capped and validated in the Rust core even when the UI is bypassed through direct IPC.
 - Invalid passphrase separator/control characters: rejected by core validation.
 - Empty character classes after ambiguity filtering: rejected.
+- Mismatched release tags and manifest versions: rejected by the release version-consistency gate.
 
 ## Accepted residual risks
 
