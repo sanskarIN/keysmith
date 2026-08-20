@@ -6,6 +6,7 @@ const DIGITS: &str = "0123456789";
 const SYMBOLS: &str = "!@#$%^&*()-_=+[]{};:,.?/";
 const AMBIGUOUS: &str = "Il1O0o|`'\"";
 const MIN_LENGTH: usize = 4;
+const MIN_BATCH_SIZE: usize = 1;
 pub const MAX_PASSWORD_LENGTH: usize = 128;
 pub const MAX_BATCH_SIZE: usize = 500;
 const MAX_CUSTOM_SYMBOLS: usize = 40;
@@ -119,8 +120,11 @@ pub fn generate_batch(
     options: &PasswordOptions,
     count: usize,
 ) -> Result<Vec<String>, KeySmithError> {
-    if !(1..=MAX_BATCH_SIZE).contains(&count) {
-        return Err(KeySmithError::InvalidBatchSize);
+    if !(MIN_BATCH_SIZE..=MAX_BATCH_SIZE).contains(&count) {
+        return Err(KeySmithError::InvalidBatchSize {
+            min: MIN_BATCH_SIZE,
+            max: MAX_BATCH_SIZE,
+        });
     }
     (0..count).map(|_| generate_password(options)).collect()
 }
