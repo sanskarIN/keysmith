@@ -1,6 +1,6 @@
 use keysmith_core::{
-    PassphraseOptions, PasswordOptions, generate_batch, generate_passphrase, generate_password,
-    presets,
+    PassphraseOptions, PasswordOptions, estimated_passphrase_entropy_bits, generate_batch,
+    generate_passphrase, generate_password, presets,
 };
 
 #[test]
@@ -93,4 +93,15 @@ fn passphrase_uses_requested_word_count() {
     let phrase =
         generate_passphrase(&options).unwrap_or_else(|error| panic!("passphrase failed: {error}"));
     assert_eq!(phrase.split('-').count(), options.words);
+}
+
+#[test]
+fn passphrase_entropy_tracks_the_8192_entry_selection_space() {
+    let options = PassphraseOptions {
+        words: 3,
+        separator: "-".to_owned(),
+        capitalize: false,
+        include_number: false,
+    };
+    assert_eq!(estimated_passphrase_entropy_bits(&options), 39.0);
 }
