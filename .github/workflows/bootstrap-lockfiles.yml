@@ -1,0 +1,43 @@
+name: Bootstrap lockfiles
+
+on:
+  push:
+    branches: ["fix/v2.7.4-ci"]
+    paths:
+      - "package.json"
+      - "Cargo.toml"
+      - "crates/**/Cargo.toml"
+      - "src-tauri/Cargo.toml"
+      - ".github/workflows/bootstrap-lockfiles.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  lockfiles:
+    name: Generate trusted lockfiles
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/v2.7.4-ci
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Generate npm lockfile
+        run: npm install --package-lock-only --ignore-scripts
+      - name: Generate Cargo lockfile
+        run: cargo generate-lockfile
+      - name: Commit lockfiles
+        run: |
+          git config user.name "sanskarIN"
+          git config user.email "sanskarin@outlook.in"
+          git add package-lock.json Cargo.lock
+          if git diff --cached --quiet; then
+            echo "Lockfiles are already current."
+            exit 0
+          fi
+          git commit -m "build: lock frontend and Rust dependencies"
+          git push origin HEAD:fix/v2.7.4-ci
