@@ -48,4 +48,11 @@ if (mismatchedUiVersions.length > 0) {
   );
 }
 
+const requestedVersion = process.env.KEYSMITH_EXPECTED_VERSION?.replace(/^v/, "");
+if (requestedVersion && requestedVersion !== expected) {
+  throw new Error(
+    `Requested release version ${requestedVersion} does not match repository version ${expected}`,
+  );
+}
+
 console.log(`Version metadata is consistent at ${expected}.`);
