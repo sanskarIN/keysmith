@@ -3,32 +3,32 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="color-scheme" content="light dark" />
-    <meta name="description" content="KeySmith — a private, offline password and passphrase generator." />
-    <title>KeySmith</title>
-    <link rel="icon" href="/src/assets/logo.svg" type="image/svg+xml" />
+    <meta name="description" content="KeySmith is a private offline password and passphrase generator." />
+    <meta name="theme-color" content="#0f172a" />
+    <title>KeySmith — Offline Password Generator</title>
   </head>
   <body>
-    <a class="skip-link" href="#generator">Skip to generator</a>
-    <div id="app">
-      <header class="topbar">
-        <a class="brand" href="#generator" aria-label="KeySmith home">
-          <img src="/src/assets/logo.svg" alt="" width="38" height="38" />
-          <span>KeySmith</span>
+    <a class="skip-link" href="#main-content">Skip to generator</a>
+    <div class="app-shell">
+      <header class="app-header">
+        <a class="brand" href="#main-content" aria-label="KeySmith home">
+          <img src="/src/assets/logo.svg" alt="" width="42" height="42" />
+          <span><strong>KeySmith</strong><small>Offline credential forge</small></span>
         </a>
-        <div class="top-actions">
-          <span class="privacy-pill" title="No network access or telemetry">Offline • Private</span>
-          <button class="icon-button" id="theme-button" type="button" aria-label="Change theme">◐</button>
-          <button class="secondary-button" id="settings-button" type="button">Settings</button>
-          <button class="secondary-button" id="about-button" type="button">About</button>
-        </div>
+        <nav class="header-actions" aria-label="Application">
+          <button id="theme-button" class="icon-button" type="button" aria-label="Cycle color theme" title="Theme: system">◐</button>
+          <button id="settings-button" class="secondary-button" type="button">Settings</button>
+          <button id="about-button" class="secondary-button" type="button">About</button>
+        </nav>
       </header>
 
-      <main class="shell" id="generator">
+      <main id="main-content">
         <section class="hero" aria-labelledby="hero-title">
-          <p class="eyebrow">SECURE BY DEFAULT</p>
-          <h1 id="hero-title">Forge strong credentials locally.</h1>
-          <p>Passwords never leave this device. Generation uses your operating system's cryptographic random source.</p>
+          <div>
+            <p class="eyebrow">PRIVATE • OFFLINE • OPEN SOURCE</p>
+            <h1 id="hero-title">Forge strong credentials locally.</h1>
+            <p>Passwords never leave this device. Generation uses your operating system's cryptographic random source.</p>
+          </div>
         </section>
 
         <section class="workspace">
@@ -89,7 +89,7 @@
                 <label><input id="capitalize" type="checkbox" /> Capitalize words</label>
                 <label><input id="include-number" type="checkbox" /> Append two digits</label>
               </fieldset>
-              <p class="hint">Words come from the EFF large Diceware word list packaged with the Rust core.</p>
+              <p class="hint">Words come from an 8,192-entry EFF-derived table packaged with the Rust core.</p>
             </div>
 
             <div id="batch-controls" class="controls hidden" role="tabpanel" aria-labelledby="tab-batch">

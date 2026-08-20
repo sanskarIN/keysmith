@@ -1,5 +1,16 @@
 # Development
 
+## Toolchain and dependency baseline
+
+The v2.7.4 release-candidate workspace pins Rust `1.97.1` in `rust-toolchain.toml`. Use the committed `package-lock.json` and `Cargo.lock` rather than resolving fresh dependency graphs during routine development or verification.
+
+```bash
+npm ci
+cargo metadata --locked --format-version 1 > /dev/null
+```
+
+If a dependency is intentionally changed, regenerate the appropriate lockfile in a reviewed change and verify the resulting diff before merging.
+
 ## Commands
 
 ```bash
@@ -13,11 +24,11 @@ npm test
 npm run build
 
 cargo fmt --all -- --check
-cargo clippy -p keysmith-core --all-targets --all-features -- -D warnings
-cargo test -p keysmith-core --all-features
-cargo check -p keysmith --all-targets
-cargo clippy -p keysmith --all-targets -- -D warnings
-cargo test -p keysmith --lib
+cargo clippy -p keysmith-core --all-targets --all-features --locked -- -D warnings
+cargo test -p keysmith-core --all-features --locked
+cargo check -p keysmith --all-targets --locked
+cargo clippy -p keysmith --all-targets --locked -- -D warnings
+cargo test -p keysmith --lib --locked
 ```
 
 ## Rules
@@ -29,7 +40,8 @@ cargo test -p keysmith --lib
 - Add typed validation at trust boundaries.
 - Prefer pure functions and explicit state.
 - Keep UI strings externalizable.
-- Add a regression test for security, clipboard, export, release-integrity, or validation defects.
+- Add a regression test for security, clipboard, export, release-integrity, dependency-policy, or validation defects.
+- Keep new dependency licenses inside the allowlist in `deny.toml`; do not suppress a license failure without documenting why the dependency is compatible with the project license.
 - Update an ADR when changing foundational architecture/security decisions.
 - Update `what_changed.md` with exact paths, verification evidence, limitations, and the next unfinished tasks before handing work off.
 
@@ -41,6 +53,14 @@ cargo test -p keysmith --lib
 4. Expose it through the existing narrow Tauri command types.
 5. Add an accessible UI control and actionable validation message.
 6. Update security/privacy/threat-model documentation if the data flow or trust boundary changes.
+
+## Changing dependencies
+
+1. Prefer maintained dependencies with explicit SPDX-compatible licensing and minimal transitive surface.
+2. Update the relevant manifest.
+3. Regenerate the lockfile and review all newly introduced or removed packages.
+4. Run `cargo deny check` for Rust changes and the complete CI matrix for release-candidate changes.
+5. Update `NOTICE` and focused documentation when attribution or licensing changes.
 
 ## Changing the application version
 

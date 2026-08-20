@@ -1,7 +1,8 @@
 use keysmith_core::{
-    generate_batch, generate_passphrase, generate_password, presets, PassphraseOptions,
-    PasswordOptions,
+    PassphraseOptions, PasswordOptions, estimated_passphrase_entropy_bits, generate_batch,
+    generate_passphrase, generate_password, presets,
 };
+use std::collections::HashSet;
 
 #[test]
 fn generated_password_contains_each_enabled_class() {
@@ -47,8 +48,8 @@ fn custom_symbols_are_deduplicated_and_respect_ambiguity_exclusion() {
         exclude_ambiguous: true,
         custom_symbols: Some("!!|".to_owned()),
     };
-    let password = generate_password(&options)
-        .unwrap_or_else(|error| panic!("generation failed: {error}"));
+    let password =
+        generate_password(&options).unwrap_or_else(|error| panic!("generation failed: {error}"));
     assert!(password.chars().all(|character| character == '!'));
 }
 
@@ -63,9 +64,13 @@ fn disabled_symbol_class_ignores_stale_custom_symbol_input() {
         exclude_ambiguous: true,
         custom_symbols: Some("not-symbols".to_owned()),
     };
-    let password = generate_password(&options)
-        .unwrap_or_else(|error| panic!("generation failed: {error}"));
-    assert!(password.chars().all(|character| character.is_ascii_lowercase()));
+    let password =
+        generate_password(&options).unwrap_or_else(|error| panic!("generation failed: {error}"));
+    assert!(
+        password
+            .chars()
+            .all(|character| character.is_ascii_lowercase())
+    );
 }
 
 #[test]
@@ -86,7 +91,25 @@ fn batch_generation_enforces_limit() {
 #[test]
 fn passphrase_uses_requested_word_count() {
     let options = PassphraseOptions::default();
-    let phrase = generate_passphrase(&options)
-        .unwrap_or_else(|error| panic!("passphrase failed: {error}"));
+    let phrase =
+        generate_passphrase(&options).unwrap_or_else(|error| panic!("passphrase failed: {error}"));
     assert_eq!(phrase.split('-').count(), options.words);
+}
+
+#[test]
+fn passphrase_entropy_tracks_the_8192_entry_selection_space() {
+    let options = PassphraseOptions {
+        words: 3,
+        separator: "-".to_owned(),
+        capitalize: false,
+        include_number: false,
+    };
+    assert_eq!(estimated_passphrase_entropy_bits(&options), 39.0);
+}
+
+#[test]
+fn passphrase_word_table_has_8192_unique_entries() {
+    let unique_words: HashSet<_> = englishid::WORD_LIST.iter().copied().collect();
+    assert_eq!(englishid::WORD_LIST.len(), 8192);
+    assert_eq!(unique_words.len(), englishid::WORD_LIST.len());
 }

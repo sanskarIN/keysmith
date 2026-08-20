@@ -21,12 +21,13 @@ KeySmith is a desktop utility for Windows, macOS, and Linux. Passwords and passp
 - OS-backed CSPRNG through Rust `getrandom`, with rejection sampling to avoid modulo bias.
 - Password policies for length, lowercase, uppercase, digits, symbols, custom symbols, and ambiguous-character exclusion.
 - Backend custom-symbol hardening: at most 40 characters, no alphanumeric/whitespace/control input, ambiguity filtering, and deduplication even when the UI is bypassed through direct IPC.
-- EFF large Diceware word-list passphrases through the `eff_wordlist` crate.
+- Offline passphrases from an 8,192-entry EFF-derived EnglishId table, providing exactly 13 bits of selection entropy per uniformly sampled word.
 - zxcvbn-based strength estimates rather than home-grown password scoring.
 - Batch generation up to 500 items with explicit export safety warnings.
 - Clipboard auto-clear that clears only if the clipboard still contains the copied secret, with a backend allowlist for supported durations and zeroizing wrappers for owned command buffers.
 - Light, dark, and system themes with keyboard-first accessibility.
 - Offline-by-design architecture with restrictive Tauri CSP and least-privilege capabilities.
+- Reproducible npm/Cargo dependency resolution with committed lockfiles and locked CI/release builds.
 - Release-version consistency checks across frontend, Rust, Tauri, visible UI metadata, and release tags.
 - Security, privacy, threat-model, testing, accessibility, release, and architecture documentation.
 
@@ -44,23 +45,23 @@ Real release screenshots will be captured from verified v2.7.4 packaged builds. 
 
 ## Tech stack
 
-- Rust 2024 workspace
+- Rust 2024 workspace, pinned to Rust 1.97.1 for the v2.7.4 release candidate
 - Tauri 2 desktop shell
 - Vanilla TypeScript + Vite frontend
 - `getrandom` for OS cryptographic randomness
-- `eff_wordlist` for EFF Diceware words
+- `englishid` for the 8,192-entry EFF-derived passphrase table
 - `zxcvbn` for strength estimation
 - `arboard` for clipboard integration
 - `zeroize` for best-effort scrubbing of owned sensitive buffers where practical
 
 ## Quick start
 
-Prerequisites: current stable Rust, Node.js 22+ recommended, npm, and the platform prerequisites documented by Tauri.
+Prerequisites: Rust 1.97.1 (automatically selected by `rust-toolchain.toml`), Node.js 22+ recommended, npm, and the platform prerequisites documented by Tauri.
 
 ```bash
 git clone https://github.com/sanskarIN/keysmith.git
 cd keysmith
-npm install
+npm ci
 npm run tauri dev
 ```
 
@@ -70,6 +71,7 @@ For platform-specific dependencies, read [`docs/setup.md`](docs/setup.md).
 
 ```bash
 # Frontend and release-metadata checks
+npm ci
 npm run typecheck
 npm run lint
 npm run format:check
@@ -79,10 +81,12 @@ npm run build
 
 # Rust checks
 cargo fmt --all -- --check
-cargo clippy -p keysmith-core --all-targets --all-features -- -D warnings
-cargo test -p keysmith-core --all-features
-cargo check -p keysmith --all-targets
-cargo test -p keysmith --lib
+cargo clippy -p keysmith-core --all-targets --all-features --locked -- -D warnings
+cargo test -p keysmith-core --all-features --locked
+cargo check -p keysmith --all-targets --locked
+cargo clippy -p keysmith --all-targets --locked -- -D warnings
+cargo test -p keysmith --lib --locked
+cargo metadata --locked --format-version 1 > /dev/null
 ```
 
 See [`docs/development.md`](docs/development.md) and [`docs/testing.md`](docs/testing.md).
@@ -90,7 +94,8 @@ See [`docs/development.md`](docs/development.md) and [`docs/testing.md`](docs/te
 ## Build and release
 
 ```bash
-npm install
+npm ci
+cargo metadata --locked --format-version 1 > /dev/null
 npm run version:check
 npm run tauri build
 ```
@@ -113,7 +118,7 @@ Contributions are welcome. Please read [`CONTRIBUTING.md`](CONTRIBUTING.md) and 
 
 ## License
 
-Licensed under the [Apache License 2.0](LICENSE). Third-party dependencies retain their own licenses.
+Licensed under the [Apache License 2.0](LICENSE). Third-party dependencies retain their own licenses; see [`NOTICE`](NOTICE) and [`docs/wordlists.md`](docs/wordlists.md) for passphrase-list attribution.
 
 ## Contact and support
 

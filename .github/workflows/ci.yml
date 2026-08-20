@@ -8,16 +8,21 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   frontend:
     name: Frontend quality
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
-      - run: npm install
+          cache: npm
+      - run: npm ci
       - run: npm run typecheck
       - run: npm run lint
       - run: npm run format:check
@@ -29,14 +34,14 @@ jobs:
     name: Rust core quality
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@1.97.1
         with:
           components: rustfmt, clippy
       - uses: Swatinem/rust-cache@v2
       - run: cargo fmt --all -- --check
-      - run: cargo clippy -p keysmith-core --all-targets --all-features -- -D warnings
-      - run: cargo test -p keysmith-core --all-features
+      - run: cargo clippy -p keysmith-core --all-targets --all-features --locked -- -D warnings
+      - run: cargo test -p keysmith-core --all-features --locked
 
   desktop-check:
     name: Tauri check (${{ matrix.os }})
@@ -46,11 +51,12 @@ jobs:
         os: [ubuntu-22.04, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
-      - uses: dtolnay/rust-toolchain@stable
+          cache: npm
+      - uses: dtolnay/rust-toolchain@1.97.1
         with:
           components: clippy
       - uses: Swatinem/rust-cache@v2
@@ -59,16 +65,17 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
-      - run: npm install
-      - run: cargo check -p keysmith --all-targets
-      - run: cargo clippy -p keysmith --all-targets -- -D warnings
-      - run: cargo test -p keysmith --lib
+      - run: npm ci
+      - run: cargo check -p keysmith --all-targets --locked
+      - run: cargo clippy -p keysmith --all-targets --locked -- -D warnings
+      - run: cargo test -p keysmith --lib --locked
 
   dependency-policy:
     name: Rust dependency policy
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - run: cargo generate-lockfile
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@1.97.1
+      - name: Verify Cargo lockfile is current
+        run: cargo metadata --locked --format-version 1 > /dev/null
       - uses: EmbarkStudios/cargo-deny-action@v2

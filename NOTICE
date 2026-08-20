@@ -3,4 +3,13 @@ Copyright 2026 Sanskar
 
 Licensed under the Apache License, Version 2.0.
 
-KeySmith uses third-party open-source dependencies. Their licenses and attribution remain with their respective authors. In particular, EFF word-list data is consumed through the `eff_wordlist` Rust crate; see that project's distribution and the Electronic Frontier Foundation documentation for the source list and licensing information.
+KeySmith uses third-party open-source dependencies. Their licenses and attribution remain with their respective authors.
+
+Passphrase word table
+---------------------
+KeySmith consumes `englishid::WORD_LIST` from the EnglishId Rust crate. EnglishId is distributed under the MIT License OR Apache License 2.0, and its documentation states that the 8,192-entry table is based on a word list created by the Electronic Frontier Foundation (EFF).
+
+EnglishId project: https://github.com/khonsulabs/englishid
+EFF passphrase word-list background: https://www.eff.org/deeplinks/2016/07/new-wordlists-random-passphrases
+
+See Cargo.lock for the resolved dependency versions and deny.toml for KeySmith's automated dependency-license policy.

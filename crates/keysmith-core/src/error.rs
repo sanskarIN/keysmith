@@ -12,8 +12,8 @@ pub enum KeySmithError {
         "custom symbols must contain at most 40 non-alphanumeric, non-whitespace, non-control characters"
     )]
     InvalidCustomSymbols,
-    #[error("batch size must be between 1 and 500")]
-    InvalidBatchSize,
+    #[error("batch size must be between {min} and {max}")]
+    InvalidBatchSize { min: usize, max: usize },
     #[error("passphrase word count must be between 3 and 12")]
     InvalidWordCount,
     #[error("separator must contain at most 3 characters and may not contain control characters")]

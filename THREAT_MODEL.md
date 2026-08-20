@@ -28,7 +28,7 @@ This model covers local password/passphrase generation, Tauri IPC, clipboard use
 | Weak policy configuration | Validation, presets, zxcvbn feedback | Users can intentionally choose weak settings |
 | Malformed custom-symbol policy | Backend caps custom symbols at 40, rejects alphanumeric/whitespace/control input, removes ambiguous characters when requested, and deduplicates symbols | Unicode display confusables outside the explicit ambiguity set can still look similar |
 | Secret leakage in logs | No password logging or analytics; review policy | External debuggers/process inspection are out of scope |
-| Clipboard exposure | Explicit copy, supported-duration allowlist, optional conditional auto-clear, and zeroizing wrappers for owned command buffers | Other apps/clipboard managers may read clipboard before clear; OS clipboard APIs necessarily receive a copy |
+| Clipboard exposure | Explicit copy, supported-duration allowlist, size policy derived from the largest valid batch, optional conditional auto-clear, and zeroizing wrappers for owned command buffers | Other apps/clipboard managers may read clipboard before clear; OS clipboard APIs necessarily receive a copy |
 | Clipboard data destruction | Clear only when clipboard still equals copied secret | Race conditions outside app control remain possible |
 | XSS/webview compromise | No remote content, restrictive CSP, local assets | Tauri/webview vulnerabilities remain dependency risk |
 | Overprivileged IPC | Small command surface and capability permissions | Future commands require review |
@@ -39,7 +39,7 @@ This model covers local password/passphrase generation, Tauri IPC, clipboard use
 ## Abuse cases
 
 - Generating huge batches to exhaust memory: capped at 500.
-- Oversized clipboard inputs: command rejects values over 4096 characters.
+- Oversized clipboard inputs: the command accepts at most the exact character count needed for the largest valid 500 × 128-character batch plus its newline separators (`64,499` characters), then rejects larger IPC values.
 - Undocumented clipboard clear durations: rejected by the desktop adapter instead of creating arbitrary secret-retention timers.
 - Oversized or malformed custom-symbol input: capped and validated in the Rust core even when the UI is bypassed through direct IPC.
 - Invalid passphrase separator/control characters: rejected by core validation.
