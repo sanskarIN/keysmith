@@ -7,27 +7,32 @@
 <p align="center"><strong>Private, offline password and passphrase generation powered by Rust and Tauri.</strong></p>
 
 <p align="center">
+  <img alt="Version: 2.7.4 release candidate" src="https://img.shields.io/badge/version-2.7.4%20RC-orange">
   <a href="https://buymeacoffee.com/sanskarIN"><img alt="Buy Me a Coffee" src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-sanskarIN-FFDD00?logo=buy-me-a-coffee&logoColor=000000"></a>
   <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-blue"></a>
 </p>
 
 KeySmith is a desktop utility for Windows, macOS, and Linux. Passwords and passphrases are generated locally using the operating system's cryptographically secure random source. The app has no account system, telemetry, password history, or required network access.
 
+**Current version line:** `2.7.4` release candidate. The final `v2.7.4` tag must not be published until the automated and manual release gates in [`docs/release.md`](docs/release.md) are complete.
+
 ## Highlights
 
 - OS-backed CSPRNG through Rust `getrandom`, with rejection sampling to avoid modulo bias.
 - Password policies for length, lowercase, uppercase, digits, symbols, custom symbols, and ambiguous-character exclusion.
+- Backend custom-symbol hardening: at most 40 characters, no alphanumeric/whitespace/control input, ambiguity filtering, and deduplication even when the UI is bypassed through direct IPC.
 - EFF large Diceware word-list passphrases through the `eff_wordlist` crate.
 - zxcvbn-based strength estimates rather than home-grown password scoring.
 - Batch generation up to 500 items with explicit export safety warnings.
-- Clipboard auto-clear that clears only if the clipboard still contains the copied secret.
+- Clipboard auto-clear that clears only if the clipboard still contains the copied secret, with a backend allowlist for supported durations and zeroizing wrappers for owned command buffers.
 - Light, dark, and system themes with keyboard-first accessibility.
 - Offline-by-design architecture with restrictive Tauri CSP and least-privilege capabilities.
+- Release-version consistency checks across frontend, Rust, Tauri, visible UI metadata, and release tags.
 - Security, privacy, threat-model, testing, accessibility, release, and architecture documentation.
 
 ## Screenshots
 
-Real release screenshots will be captured from signed release candidates during Phase 5. Until then, the source UI is in `index.html` and `src/styles.css`; placeholder binary screenshots are intentionally not committed.
+Real release screenshots will be captured from verified v2.7.4 packaged builds. Until then, the source UI is in `index.html` and `src/styles.css`; placeholder binary screenshots are intentionally not committed or represented as real application captures.
 
 ## Supported platforms
 
@@ -46,6 +51,7 @@ Real release screenshots will be captured from signed release candidates during 
 - `eff_wordlist` for EFF Diceware words
 - `zxcvbn` for strength estimation
 - `arboard` for clipboard integration
+- `zeroize` for best-effort scrubbing of owned sensitive buffers where practical
 
 ## Quick start
 
@@ -63,17 +69,20 @@ For platform-specific dependencies, read [`docs/setup.md`](docs/setup.md).
 ## Development
 
 ```bash
-# Frontend checks
+# Frontend and release-metadata checks
 npm run typecheck
 npm run lint
 npm run format:check
+npm run version:check
 npm test
 npm run build
 
 # Rust checks
 cargo fmt --all -- --check
-cargo clippy --workspace --all-targets --all-features -- -D warnings
-cargo test --workspace --all-features
+cargo clippy -p keysmith-core --all-targets --all-features -- -D warnings
+cargo test -p keysmith-core --all-features
+cargo check -p keysmith --all-targets
+cargo test -p keysmith --lib
 ```
 
 See [`docs/development.md`](docs/development.md) and [`docs/testing.md`](docs/testing.md).
@@ -82,14 +91,15 @@ See [`docs/development.md`](docs/development.md) and [`docs/testing.md`](docs/te
 
 ```bash
 npm install
+npm run version:check
 npm run tauri build
 ```
 
-The Tauri bundler produces platform-native artifacts. Release signing credentials are never stored in the repository. See [`docs/release.md`](docs/release.md).
+The Tauri bundler produces platform-native artifacts. Release signing credentials are never stored in the repository. Release tags are checked against repository version metadata before the automated release build proceeds. See [`docs/release.md`](docs/release.md).
 
 ## Architecture
 
-The security-sensitive generation logic lives in `crates/keysmith-core` and has no UI dependency. `src-tauri` exposes a narrow IPC command surface. The TypeScript layer renders the UI and stores only non-secret preferences in local storage. Passwords are never persisted. See [`docs/architecture.md`](docs/architecture.md) and [`docs/adr/`](docs/adr/).
+The security-sensitive generation logic lives in `crates/keysmith-core` and has no UI dependency. `src-tauri` exposes a narrow IPC command surface. The TypeScript layer renders the UI and stores only non-secret preferences in local storage. Passwords are never intentionally persisted. See [`docs/architecture.md`](docs/architecture.md) and [`docs/adr/`](docs/adr/).
 
 ## Security and privacy
 
