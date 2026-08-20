@@ -15,6 +15,23 @@ function hasNativeBridge(): boolean {
   return Boolean(window.__TAURI__?.core?.invoke);
 }
 
+function configureBrowserShell(): void {
+  if (hasNativeBridge()) return;
+
+  if (!document.querySelector<HTMLLinkElement>('link[rel="manifest"]')) {
+    const manifest = document.createElement("link");
+    manifest.rel = "manifest";
+    manifest.href = "/manifest.webmanifest";
+    document.head.append(manifest);
+  }
+
+  if (import.meta.env.PROD && "serviceWorker" in navigator) {
+    void navigator.serviceWorker.register("/sw.js").catch(() => {
+      // Generation still works online if service-worker installation is unavailable.
+    });
+  }
+}
+
 function invoke<T>(command: string, args?: Record<string, unknown>): Promise<T> {
   if (!window.__TAURI__?.core?.invoke) {
     return Promise.reject(new Error("KeySmith native bridge is unavailable."));
@@ -62,6 +79,8 @@ function browserExport(suggestedName: string, content: string): ExportResult {
   window.setTimeout(() => URL.revokeObjectURL(url), 0);
   return "download-started";
 }
+
+configureBrowserShell();
 
 export const api = {
   generatePassword(options: PasswordOptions): Promise<SecretResult> {
