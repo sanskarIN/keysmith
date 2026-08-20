@@ -18,6 +18,8 @@ keysmith-core = { path = "../crates/keysmith-core" }
 serde = { version = "1", features = ["derive"] }
 tauri = { version = "2", features = [] }
 tauri-plugin-clipboard-manager = "2"
+tauri-plugin-dialog = "2"
+tauri-plugin-fs = "2"
 zeroize = "1"
 
 [lints]
