@@ -1,5 +1,6 @@
 use keysmith_core::{
-    generate_batch, generate_passphrase, generate_password, PassphraseOptions, PasswordOptions,
+    generate_batch, generate_passphrase, generate_password, presets, PassphraseOptions,
+    PasswordOptions,
 };
 
 #[test]
@@ -65,6 +66,15 @@ fn disabled_symbol_class_ignores_stale_custom_symbol_input() {
     let password = generate_password(&options)
         .unwrap_or_else(|error| panic!("generation failed: {error}"));
     assert!(password.chars().all(|character| character.is_ascii_lowercase()));
+}
+
+#[test]
+fn built_in_presets_remain_valid_generation_policies() {
+    for preset in presets() {
+        let password = generate_password(&preset.options)
+            .unwrap_or_else(|error| panic!("preset {} failed: {error}", preset.id));
+        assert_eq!(password.chars().count(), preset.options.length);
+    }
 }
 
 #[test]
