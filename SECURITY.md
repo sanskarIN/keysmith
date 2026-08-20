@@ -2,7 +2,12 @@
 
 ## Supported versions
 
-Until the first stable release, security fixes target the latest `main` branch and newest published prerelease. After 1.0, the current major release will receive security fixes.
+| Version | Supported |
+| --- | --- |
+| `2.7.x` | Yes — current release line |
+| `< 2.7` | No — upgrade to the current release line |
+
+Security fixes target the latest supported `2.7.x` release and the current `main` branch. Security-sensitive fixes may be released outside the normal feature cadence when necessary.
 
 ## Reporting a vulnerability
 
