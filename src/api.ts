@@ -1,5 +1,5 @@
 import { save } from "@tauri-apps/plugin-dialog";
-import { writeTextFile } from "@tauri-apps/plugin-fs";
+import { readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";
 import type {
   PassphraseOptions,
   PassphraseResult,
@@ -42,7 +42,12 @@ export const api = {
       filters: [{ name: "Plain text", extensions: ["txt"] }],
     });
     if (!path) return false;
+
     await writeTextFile(path, content);
+    const verified = await readTextFile(path);
+    if (verified !== content) {
+      throw new Error("The selected destination did not preserve the exported text.");
+    }
     return true;
   },
 };
