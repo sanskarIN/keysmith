@@ -14,12 +14,13 @@
 - [x] Deterministic version-consistency gate in normal CI and tag-to-manifest verification in release CI.
 - [x] Rust-core and desktop-adapter regression coverage for the v2.7.4 hardening changes.
 - [x] Security, privacy, threat-model, testing, release, architecture, accessibility, and contributor documentation baseline.
+- [x] Trusted npm and Cargo lockfiles generated from repository automation and committed for reproducible dependency resolution.
+- [x] CI and release workflows consume committed lockfiles with `npm ci` and Cargo locked-resolution checks.
 
 ### Required before the final v2.7.4 tag
 
 - [ ] Observe a fully green pull-request CI matrix on the exact candidate commit.
 - [ ] Observe green JavaScript/TypeScript and Rust CodeQL analysis on the exact candidate commit.
-- [ ] Generate and commit trusted dependency lockfiles if clean resolution produces them.
 - [ ] Build native Tauri bundles on Windows, macOS, and Linux.
 - [ ] Smoke-test generation, custom-symbol validation, passphrases, batch export, clipboard behavior, onboarding, settings, themes, accessibility, and external/support links in packaged apps.
 - [ ] Capture real release screenshots from verified builds.
