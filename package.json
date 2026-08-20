@@ -6,13 +6,31 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
+    "web:dev": "npm run wasm:build && vite --host",
+    "web:build": "npm run wasm:build && tsc --noEmit && vite build",
+    "web:preview": "vite preview",
+    "wasm:build": "wasm-pack build crates/keysmith-web --target web --out-dir ../../public/wasm --out-name keysmith_web --no-pack",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src vite.config.ts",
     "format": "prettier --write .",
     "format:check": "node scripts/check-format.mjs",
     "version:check": "node scripts/check-version.mjs",
+    "platform:check": "node scripts/check-platforms.mjs",
     "test": "vitest run",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "icons:generate": "tauri icon src/assets/logo.svg",
+    "android:init": "tauri android init",
+    "android:dev": "tauri android dev",
+    "android:build:apk": "tauri android build --apk",
+    "android:build:aab": "tauri android build --aab",
+    "ios:init": "tauri ios init",
+    "ios:prepare": "node scripts/prepare-ios-privacy.mjs",
+    "ios:dev": "tauri ios dev",
+    "ios:build": "tauri ios build"
+  },
+  "dependencies": {
+    "@tauri-apps/plugin-dialog": "^2",
+    "@tauri-apps/plugin-fs": "^2"
   },
   "devDependencies": {
     "@eslint/js": "^9",
@@ -24,6 +42,7 @@
     "typescript": "^5.9",
     "typescript-eslint": "^8",
     "vitest": "^3",
-    "vite": "^7"
+    "vite": "^7",
+    "wasm-pack": "0.15.0"
   }
 }

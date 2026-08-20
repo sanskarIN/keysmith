@@ -1,0 +1,145 @@
+/* Mobile and touch-device adaptations layered over the shared desktop design. */
+
+html,
+body,
+#app {
+  min-height: 100%;
+}
+
+body {
+  min-height: 100dvh;
+  overscroll-behavior-y: none;
+  -webkit-text-size-adjust: 100%;
+}
+
+.topbar {
+  height: auto;
+  min-height: 72px;
+  padding-top: env(safe-area-inset-top);
+  padding-left: max(clamp(1rem, 4vw, 3rem), env(safe-area-inset-left));
+  padding-right: max(clamp(1rem, 4vw, 3rem), env(safe-area-inset-right));
+}
+
+.shell,
+footer {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+footer {
+  padding-bottom: calc(2rem + env(safe-area-inset-bottom));
+}
+
+.primary-button,
+.secondary-button,
+.icon-button,
+.segmented button,
+input,
+select {
+  min-height: 44px;
+  touch-action: manipulation;
+}
+
+input[type="range"] {
+  min-height: 44px;
+}
+
+input[type="checkbox"] {
+  min-width: 20px;
+  min-height: 20px;
+}
+
+dialog {
+  max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 1rem);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.dialog-card {
+  padding-bottom: max(1.7rem, calc(1rem + env(safe-area-inset-bottom)));
+}
+
+@media (pointer: coarse) {
+  .primary-button,
+  .secondary-button,
+  .icon-button,
+  .segmented button,
+  input,
+  select {
+    min-height: 48px;
+  }
+
+  .check-grid label {
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 560px) {
+  .topbar {
+    min-height: 64px;
+    gap: 0.5rem;
+    padding-left: max(0.75rem, env(safe-area-inset-left));
+    padding-right: max(0.75rem, env(safe-area-inset-right));
+  }
+
+  .top-actions {
+    gap: 0.35rem;
+  }
+
+  .top-actions .secondary-button {
+    padding-inline: 0.65rem;
+  }
+
+  .generator-card,
+  .settings-card {
+    border-radius: 18px;
+  }
+
+  .secret-actions,
+  .batch-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .secret-actions button,
+  .batch-actions button {
+    width: 100%;
+  }
+
+  dialog {
+    width: min(100% - 1rem, 480px);
+  }
+
+  .about-list div {
+    align-items: flex-start;
+  }
+
+  .about-list dd {
+    text-align: right;
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (max-width: 410px) {
+  .brand span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .top-actions .secondary-button {
+    font-size: 0.84rem;
+    padding-inline: 0.55rem;
+  }
+
+  .segmented button {
+    padding-inline: 0.4rem;
+    font-size: 0.88rem;
+  }
+}

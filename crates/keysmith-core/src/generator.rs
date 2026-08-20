@@ -1,4 +1,4 @@
-use crate::{random, KeySmithError, PasswordOptions};
+use crate::{KeySmithError, PasswordOptions, random};
 
 const LOWERCASE: &str = "abcdefghijklmnopqrstuvwxyz";
 const UPPERCASE: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";

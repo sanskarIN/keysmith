@@ -1,9 +1,11 @@
 use keysmith_core::{
-    estimate_strength, generate_batch, generate_passphrase, generate_password, presets,
-    PassphraseOptions, PasswordOptions, StrengthEstimate,
+    PassphraseOptions, PasswordOptions, StrengthEstimate, estimate_strength, generate_batch,
+    generate_passphrase, generate_password, presets,
 };
 use serde::Serialize;
 use std::{thread, time::Duration};
+use tauri::AppHandle;
+use tauri_plugin_clipboard_manager::ClipboardExt;
 use zeroize::Zeroizing;
 
 const SUPPORTED_CLIPBOARD_CLEAR_SECONDS: [u64; 5] = [0, 15, 30, 60, 120];
@@ -72,26 +74,29 @@ fn validate_clipboard_clear_seconds(clear_after_seconds: u64) -> Result<(), Stri
 }
 
 #[tauri::command]
-pub fn copy_secret_command(secret: String, clear_after_seconds: u64) -> Result<(), String> {
+pub fn copy_secret_command(
+    app: AppHandle,
+    secret: String,
+    clear_after_seconds: u64,
+) -> Result<(), String> {
     let secret = Zeroizing::new(secret);
     if secret.chars().count() > 4096 {
         return Err("clipboard value is too large".to_owned());
     }
     validate_clipboard_clear_seconds(clear_after_seconds)?;
 
-    let mut clipboard =
-        arboard::Clipboard::new().map_err(|_| "clipboard is unavailable".to_owned())?;
-    clipboard
-        .set_text(secret.to_string())
+    app.clipboard()
+        .write_text(secret.as_str())
         .map_err(|_| "failed to write to clipboard".to_owned())?;
 
     if clear_after_seconds > 0 {
+        let app_handle = app.clone();
         let expected = Zeroizing::new(secret.to_string());
         thread::spawn(move || {
             thread::sleep(Duration::from_secs(clear_after_seconds));
-            if let Ok(mut clipboard) = arboard::Clipboard::new() {
-                if clipboard.get_text().ok().as_deref() == Some(expected.as_str()) {
-                    let _ = clipboard.set_text(String::new());
+            if let Ok(current) = app_handle.clipboard().read_text() {
+                if current == expected.as_str() {
+                    let _ = app_handle.clipboard().clear();
                 }
             }
         });
@@ -101,17 +106,15 @@ pub fn copy_secret_command(secret: String, clear_after_seconds: u64) -> Result<(
 }
 
 #[tauri::command]
-pub fn clear_clipboard_command() -> Result<(), String> {
-    let mut clipboard =
-        arboard::Clipboard::new().map_err(|_| "clipboard is unavailable".to_owned())?;
-    clipboard
-        .set_text(String::new())
+pub fn clear_clipboard_command(app: AppHandle) -> Result<(), String> {
+    app.clipboard()
+        .clear()
         .map_err(|_| "failed to clear clipboard".to_owned())
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{validate_clipboard_clear_seconds, SUPPORTED_CLIPBOARD_CLEAR_SECONDS};
+    use super::{SUPPORTED_CLIPBOARD_CLEAR_SECONDS, validate_clipboard_clear_seconds};
 
     #[test]
     fn documented_clipboard_durations_are_supported() {

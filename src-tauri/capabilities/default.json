@@ -1,7 +1,13 @@
 {
-  "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "main-capability",
-  "description": "Least-privilege capability for the KeySmith main window",
+  "description": "Least-privilege capability for the KeySmith main window on desktop and mobile",
   "windows": ["main"],
-  "permissions": ["core:default", "keysmith-generation", "keysmith-clipboard"]
+  "permissions": [
+    "core:default",
+    "keysmith-generation",
+    "keysmith-clipboard",
+    "dialog:allow-save",
+    "fs:allow-write-text-file",
+    "fs:allow-read-text-file"
+  ]
 }

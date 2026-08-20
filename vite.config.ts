@@ -1,10 +1,20 @@
 import { defineConfig } from "vite";
 
+const mobileHost = process.env.TAURI_DEV_HOST;
+
 export default defineConfig({
   clearScreen: false,
   server: {
     port: 1420,
     strictPort: true,
+    host: mobileHost || false,
+    hmr: mobileHost
+      ? {
+          protocol: "ws",
+          host: mobileHost,
+          port: 1421,
+        }
+      : undefined,
     watch: { ignored: ["**/src-tauri/**"] },
   },
   envPrefix: ["VITE_", "TAURI_ENV_"],
