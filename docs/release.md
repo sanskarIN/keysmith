@@ -17,6 +17,7 @@
    - `cargo clippy -p keysmith-core --all-targets --all-features -- -D warnings`
    - `cargo test -p keysmith-core --all-features`
    - `cargo check -p keysmith --all-targets`
+   - `cargo clippy -p keysmith --all-targets -- -D warnings`
    - `cargo test -p keysmith --lib`
    - cargo-deny policy
 6. Require the Windows, macOS, and Linux desktop checks and CodeQL analyses to be green on the same release-candidate commit.
