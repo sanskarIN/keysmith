@@ -1,0 +1,21 @@
+[package]
+name = "keysmith-web"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "WebAssembly bindings for the shared KeySmith security core"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+getrandom = { version = "0.4", features = ["wasm_js"] }
+keysmith-core = { path = "../keysmith-core" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+wasm-bindgen = "0.2"
+
+[lints]
+workspace = true
