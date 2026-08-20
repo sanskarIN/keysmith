@@ -7,6 +7,9 @@ node_modules/
 dist/
 .vite/
 
+# Generated browser WebAssembly
+public/wasm/
+
 # Tauri
 src-tauri/target/
 src-tauri/gen/
