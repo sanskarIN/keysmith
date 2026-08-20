@@ -184,7 +184,7 @@ async function clearClipboard(): Promise<void> {
   }
 }
 
-function exportBatch(): void {
+async function exportBatch(): Promise<void> {
   if (batch.length === 0) return;
   const content = [
     "# KeySmith batch export",
@@ -194,14 +194,14 @@ function exportBatch(): void {
     ...batch.map((item) => item.secret),
     "",
   ].join("\n");
-  const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = `keysmith-batch-${new Date().toISOString().slice(0, 10)}.txt`;
-  anchor.click();
-  URL.revokeObjectURL(url);
-  setStatus(en.batchExportWarning);
+  const filename = `keysmith-batch-${new Date().toISOString().slice(0, 10)}.txt`;
+
+  try {
+    const saved = await api.exportTextFile(filename, content);
+    setStatus(saved ? `${en.batchExportWarning} Saved to the selected location.` : "Export cancelled.");
+  } catch (error) {
+    setStatus(`Batch export failed: ${String(error)}`, true);
+  }
 }
 
 function switchMode(next: GeneratorMode): void {
@@ -286,7 +286,7 @@ function bindEvents(): void {
   ui.generate.addEventListener("click", () => void generate());
   ui.copy.addEventListener("click", () => void copyText(currentSecret));
   ui.copyBatch.addEventListener("click", () => void copyText(batch.map((item) => item.secret).join("\n")));
-  ui.exportBatch.addEventListener("click", exportBatch);
+  ui.exportBatch.addEventListener("click", () => void exportBatch());
   ui.clearClipboard.addEventListener("click", () => void clearClipboard());
   ui.settingsClearClipboard.addEventListener("click", () => void clearClipboard());
   ui.length.addEventListener("input", () => {
