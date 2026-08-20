@@ -21,7 +21,13 @@ The passphrase regression coverage verifies:
 
 ## Desktop adapter
 
-`cargo test -p keysmith --lib --locked` covers pure desktop-adapter policy helpers that do not require a live clipboard. The current suite verifies that only the documented clipboard auto-clear durations (`0`, `15`, `30`, `60`, and `120` seconds) are accepted by IPC-side validation.
+`cargo test -p keysmith --lib --locked` covers pure desktop-adapter policy helpers that do not require a live clipboard. The current suite verifies:
+
+- only the documented clipboard auto-clear durations (`0`, `15`, `30`, `60`, and `120` seconds) are accepted by IPC-side validation,
+- the exact largest valid batch copy (`500 × 128` password characters plus `499` newline separators = `64,499` characters) is accepted,
+- a clipboard payload one character beyond that batch-derived maximum is rejected.
+
+The clipboard-size boundary is derived from `keysmith-core`'s exported `MAX_PASSWORD_LENGTH` and `MAX_BATCH_SIZE` constants so generator policy and desktop IPC policy cannot silently drift apart.
 
 Clipboard integration itself still requires manual platform smoke testing because it depends on the operating-system clipboard service.
 
@@ -53,7 +59,7 @@ Clipboard integration itself still requires manual platform smoke testing becaus
 
 ## UI and manual release checks
 
-Manual release checks cover keyboard navigation, reduced motion, focus order, mode switching, generation, invalid-policy feedback, copy, conditional clipboard clear, clear-now behavior, batch warnings/export, onboarding, settings, themes, and About links.
+Manual release checks cover keyboard navigation, reduced motion, focus order, mode switching, generation, invalid-policy feedback, single-secret copy, maximum-size batch copy, conditional clipboard clear, clear-now behavior, batch warnings/export, onboarding, settings, themes, and About links.
 
 ## Security regression rule
 
