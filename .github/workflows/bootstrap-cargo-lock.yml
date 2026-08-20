@@ -1,0 +1,33 @@
+name: Bootstrap Cargo lockfile
+
+on:
+  push:
+    branches: ["fix/v2.7.4-ci"]
+    paths:
+      - "Cargo.toml"
+      - "crates/**/Cargo.toml"
+      - ".github/workflows/bootstrap-cargo-lock.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  lockfile:
+    name: Regenerate trusted Cargo lockfile
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: fix/v2.7.4-ci
+      - uses: dtolnay/rust-toolchain@1.97.1
+      - name: Generate Cargo lockfile
+        run: cargo generate-lockfile
+      - name: Commit lockfile and remove bootstrap workflow
+        run: |
+          git config user.name "sanskarIN"
+          git config user.email "sanskarin@outlook.in"
+          git add Cargo.lock
+          git rm .github/workflows/bootstrap-cargo-lock.yml
+          git commit -m "build: refresh Cargo lockfile after license-safe dependency swap"
+          git push origin HEAD:fix/v2.7.4-ci
