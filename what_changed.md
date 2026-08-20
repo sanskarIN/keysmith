@@ -15,9 +15,9 @@ This file is the canonical continuation ledger for future KeySmith work. Read it
 
 The repository has been moved from the earlier `0.1.0` preview metadata to the requested `2.7.4` release-candidate line. The version number is now synchronized across the frontend package, Rust workspace, Tauri bundle configuration, and visible application labels.
 
-`v2.7.4` is **not yet declared stable and must not be tagged yet**. The remaining blockers are clean CI/CodeQL evidence on the exact candidate commit, trusted lockfile generation, native package builds, packaged-app smoke testing, real screenshots, branch-protection setup, and final release-artifact verification.
+`v2.7.4` is **not yet declared stable and must not be tagged yet**. The remaining blockers are clean CI/CodeQL evidence on the exact final candidate commit, trusted lockfile generation, native package builds, packaged-app smoke testing, real screenshots, branch-protection setup, and final release-artifact verification.
 
-The connected GitHub tooling currently reports PR #13 as open and mergeable, but it has not exposed workflow runs or combined statuses for the latest candidate commits. Therefore no claim of green CI is made in this ledger.
+PR #13 is open and currently reported as mergeable by the connected GitHub integration. CI and CodeQL were successfully observed as queued on candidate SHA `c46f8e8c` after the redundant legacy Rust workflow was removed: the maintained CI matrix exposed six jobs and CodeQL exposed two language jobs. Additional documentation-only commits were then made to complete the repository documentation audit. At the time this ledger was finalized, the newest documentation commit had not yet exposed its replacement workflow runs through the connector. Therefore **no claim of green CI is made**. The exact final PR head must be checked again before merge or tag.
 
 ## Work completed in this v2.7.4 continuation
 
@@ -103,13 +103,44 @@ Changed exact paths:
   - desktop matrix now runs `cargo test -p keysmith --lib` on Windows, macOS, and Linux.
   - desktop matrix now installs Clippy and runs `cargo clippy -p keysmith --all-targets -- -D warnings` so adapter warnings fail CI instead of being informational only.
 
-### 5. Security and release-policy documentation updated
+### 5. CI workflow consolidation
+
+A previously undocumented `.github/workflows/rust.yml` was discovered when the first v2.7.4 PR workflows became visible. It duplicated Rust build/test coverage on Ubuntu but did not install the Linux Tauri/WebKit system dependencies required by the workspace, making it both redundant and a likely source of misleading failures.
+
+Changed exact path:
+
+- `.github/workflows/rust.yml`
+  - removed completely.
+  - the maintained `.github/workflows/ci.yml` remains authoritative for Rust-core quality, cross-platform Tauri checks, desktop adapter Clippy/tests, frontend quality, and Rust dependency policy.
+
+Observed after removal on SHA `c46f8e8c`:
+
+- CI workflow queued with:
+  - `Frontend quality`,
+  - `Rust core quality`,
+  - `Rust dependency policy`,
+  - `Tauri check (ubuntu-22.04)`,
+  - `Tauri check (windows-latest)`,
+  - `Tauri check (macos-latest)`.
+- CodeQL workflow queued with:
+  - `analyze (javascript-typescript)`,
+  - `analyze (rust)`.
+- no replacement standalone `Rust` workflow was triggered on that SHA.
+
+### 6. Security, privacy, contributor, GitHub, and release documentation updated
 
 Changed exact paths:
 
 - `SECURITY.md`
   - supported release line updated to `2.7.x`.
   - older release lines are documented as unsupported for security fixes.
+- `PRIVACY.md`
+  - documents the exact non-secret preference keys.
+  - documents the frontend fallback and backend clipboard-duration allowlist.
+  - documents temporary in-memory copies across TypeScript, Rust, webview, and OS clipboard boundaries.
+  - clarifies that Rust `Zeroizing<String>` is best-effort and is not a claim that JavaScript strings, OS clipboard implementations, or all process memory can be erased on demand.
+  - documents clear-now semantics and plaintext batch-export persistence outside the memory-only secret policy.
+  - explicitly prohibits generated-secret logging/analytics under the current privacy model.
 - `THREAT_MODEL.md`
   - adds malformed custom-symbol policy as a modeled threat.
   - records the 40-character backend cap and character-category rejection.
@@ -132,6 +163,12 @@ Changed exact paths:
   - explicitly treats webview-to-Tauri IPC as an untrusted validation boundary.
   - documents zeroization/error-path and security-regression expectations.
   - documents every version-bearing path that must change for a release.
+- `docs/github.md`
+  - removes the stale `0.1 Secure MVP` / `0.2 Hardening` / `1.0 Stable` milestone plan.
+  - makes v2.7.4 release verification the current milestone.
+  - documents the actual maintained CI/CodeQL job names observed for the candidate.
+  - explicitly warns not to configure the removed legacy `Rust` workflow as a required check.
+  - documents release-branch/tag and branch-protection sequencing.
 - `ROADMAP.md`
   - removes the stale 0.1/0.2/1.0 phase structure.
   - makes v2.7.4 the current release candidate.
@@ -145,8 +182,19 @@ Changed exact paths:
   - documents the release-version integrity gate.
   - removes stale “Phase 5” screenshot wording and states that real screenshots must come from verified v2.7.4 packaged builds.
   - updates development/build command examples.
+- `CONTRIBUTING.md`
+  - aligns the contributor quality gate with v2.7.4 CI.
+  - adds version consistency, desktop Clippy/tests, IPC trust-boundary validation, security regression rules, release-status truthfulness, and exact version-bearing paths.
+- `.github/pull_request_template.md`
+  - expands verification checkboxes for frontend, version consistency, Rust core, desktop adapter, manual OS integration, regression tests, secret exclusion, documentation, and security/privacy/accessibility/release impact.
+  - adds an explicit “Remaining verification” section.
+- `.github/RELEASE_TEMPLATE.md`
+  - removes the stale “0.1 series” upgrade note.
+  - adds tag/manifest consistency, full CI/CodeQL, package/manual smoke tests, screenshots, signing/artifact checks, documentation updates, and known-limitations requirements.
 - `CHANGELOG.md`
   - records the v2.7.4 added/changed/fixed/security details from this continuation.
+- `what_changed.md`
+  - this canonical ledger now records all work through the final documentation audit and the observed workflow state.
 
 ## Existing implemented product scope retained
 
@@ -297,8 +345,11 @@ Primary repository/project documentation currently includes:
   - tag-to-manifest version check before artifact generation.
 - `.github/dependabot.yml`
   - Cargo, npm, and GitHub Actions updates.
+- `.github/workflows/rust.yml`
+  - removed as redundant legacy automation; do not restore it unless a materially distinct verification purpose is designed.
 - structured bug/feature issue forms and issue routing.
-- pull-request quality/security checklist.
+- strengthened pull-request quality/security/release checklist.
+- modernized release template.
 - Buy Me a Coffee funding configuration.
 
 ## Verification performed during this v2.7.4 continuation
@@ -312,10 +363,14 @@ Primary repository/project documentation currently includes:
 - opened PR #13 against `main` so the candidate has a PR verification target.
 - PR #13 is currently reported as open and mergeable by the connected GitHub integration.
 - no open repository issues were returned by the connected issue search during this pass.
+- discovered the legacy `.github/workflows/rust.yml` when GitHub exposed an unexpected third workflow named `Rust` on an earlier candidate SHA.
+- removed that redundant workflow and observed that candidate SHA `c46f8e8c` then queued only the maintained `CI` and `CodeQL` workflows.
+- observed six maintained CI jobs and two CodeQL language jobs queued on `c46f8e8c` as listed above.
+- updated PR #13 body with the complete v2.7.4 scope, hardening details, and explicit release blockers.
 
 ### Local executable verification available in the current environment
 
-The current shell has Node.js `v22.16.0` but no Rust/Cargo toolchain and no external network/DNS access.
+The current shell has Node.js `v22.16.0` but no Rust/Cargo toolchain and no external network/DNS access. A direct `git clone` attempt against the public repository failed because the shell could not resolve `github.com`, confirming that the local shell cannot be used as a clean online build environment in this session.
 
 A local fixture reproducing the committed `scripts/check-version.mjs` logic was executed with Node.js:
 
@@ -338,7 +393,7 @@ The current execution environment does not provide Cargo/Rust and cannot reach p
 - full frontend typecheck/lint/Vitest/Vite build using repository-installed dependencies.
 - native Tauri package builds.
 
-GitHub workflow-run lookup through the connected integration has not returned runs for the current PR head yet. Do not infer that CI passed from the absence of returned runs or statuses.
+GitHub Actions is the authoritative clean verification path for these checks. Workflows were observed queued on an earlier candidate SHA after CI cleanup, but the final documentation commit must receive and complete its own runs before any green/stable claim is made.
 
 ## Known limitations / non-blocking design decisions
 
@@ -350,22 +405,22 @@ GitHub workflow-run lookup through the connected integration has not returned ru
 - no silent automatic update check is implemented because the app is offline by default; releases are distributed through the repository release process.
 - `Cargo.lock` and `package-lock.json` are still not present because trusted clean dependency resolution has not yet been captured in this execution path.
 - real screenshots remain deferred until the UI is launched from a verified packaged release candidate.
-- branch protection is not enabled yet; `docs/github.md` describes the recommended rule set after proven required-check names are available.
+- branch protection is not enabled yet; `docs/github.md` now documents the actual maintained job names observed during this v2.7.4 pass and the recommended rule sequence.
 - platform signing/notarization remains an external/protected-secret release operation and must never place private signing material in the repository.
 
 ## Next exact tasks
 
 Continue in this order unless new CI evidence changes the priority:
 
-1. Re-read this ledger and PR #13 head before changing anything.
-2. Inspect PR #13 workflow runs and CodeQL as soon as the connected GitHub tooling exposes them.
+1. Re-read this ledger and fetch the current PR #13 head before changing anything.
+2. Inspect CI and CodeQL for the **exact latest PR head**, not an earlier candidate SHA.
 3. Read every failed job/step log and fix the root cause; add a regression test whenever behavior/security is involved.
-4. Repeat until frontend quality, Rust core quality, all three desktop matrix jobs, dependency policy, and both CodeQL languages are green on the same candidate SHA.
+4. Repeat until `Frontend quality`, `Rust core quality`, `Rust dependency policy`, all three `Tauri check (...)` jobs, and both CodeQL language jobs are green on the same candidate SHA.
 5. Generate trusted `Cargo.lock` and `package-lock.json` from clean dependency resolution and commit them if the resolved dependency graph is suitable.
 6. Build/package Tauri v2.7.4 on Windows, macOS, and Linux.
 7. Smoke-test password generation, all built-in presets, custom-symbol validation, ambiguity exclusion, passphrases, batch generation/export, clipboard copy, each supported auto-clear duration, conditional clear behavior, clear-now, onboarding, settings, themes, keyboard flow, reduced motion, and About/support/funding links from packaged applications.
 8. Capture real release screenshots and update the README/documentation with only genuine captures from the verified candidate.
-9. Enable `main` branch protection using the actual proven check names.
+9. Enable `main` branch protection using the exact successful check names proven by GitHub Actions; do not add the removed legacy `Rust` workflow.
 10. Update this ledger with final CI/build/smoke-test evidence and exact artifact information.
 11. Merge PR #13 only after the candidate release gate is satisfied, then verify the `main` merge commit.
 12. Create the exact `v2.7.4` tag only after the merge commit and version metadata are verified.
@@ -389,7 +444,7 @@ Future preference schema changes must preserve safe defaults and must never turn
 
 KeySmith v2.7.4 is the active release candidate for the offline-first desktop password and passphrase generator. It combines OS-backed cryptographic randomness, EFF Diceware passphrases, zxcvbn strength estimates, policy presets, batch generation, guarded plaintext export, conditional clipboard auto-clear, first-run onboarding, complete privacy/accessibility/settings surfaces, cross-platform Tauri packaging configuration, security documentation, and automated quality/security workflows.
 
-The v2.7.4 hardening pass adds backend enforcement for custom-symbol policy boundaries, deduplicates custom symbols, preserves ambiguity exclusion for custom input, adds best-effort zeroizing ownership around clipboard command buffers, restricts IPC clipboard timers to documented values, adds desktop adapter regression tests/Clippy enforcement, and prevents release tags from disagreeing with frontend/Rust/Tauri/UI version metadata.
+The v2.7.4 hardening pass adds backend enforcement for custom-symbol policy boundaries, deduplicates custom symbols, preserves ambiguity exclusion for custom input, adds best-effort zeroizing ownership around clipboard command buffers, restricts IPC clipboard timers to documented values, adds desktop adapter regression tests/Clippy enforcement, prevents release tags from disagreeing with frontend/Rust/Tauri/UI version metadata, removes a redundant legacy Rust workflow, and aligns contributor/privacy/GitHub/release documentation with the maintained release gate.
 
 No account, telemetry, cloud sync, or password-history service is included.
 
@@ -429,6 +484,10 @@ Clipboard/desktop hardening:
 - `43d9d91f` — `ci: run desktop adapter unit tests`
 - `51fd0472` — `ci: enforce desktop adapter clippy warnings`
 
+CI consolidation:
+
+- `c46f8e8c` — `ci: remove redundant legacy Rust workflow`
+
 Documentation alignment:
 
 - `95ddeb5c` — `docs: document v2.7.4 security hardening`
@@ -441,6 +500,12 @@ Documentation alignment:
 - `a2fac9dc` — `docs: include desktop clippy in test matrix`
 - `f0e5733c` — `docs: add desktop clippy development gate`
 - `81a86748` — `docs: add desktop clippy to release gate`
+- `5acf81ee` — `docs: record complete v2.7.4 handoff`
+- `aae1fdc6` — `docs: align contributing guide with v2.7.4 gates`
+- `441202c4` — `docs: strengthen pull request verification checklist`
+- `b33902d4` — `docs: align GitHub operations with v2.7.4`
+- `b7b30386` — `docs: modernize release template for v2.7.4`
+- `b0679f9c` — `docs: clarify v2.7.4 privacy boundaries`
 
 ## Commit identity
 
