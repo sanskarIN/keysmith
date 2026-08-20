@@ -71,11 +71,15 @@ for (const script of [
 assert(workspaceText.includes('"crates/keysmith-web"'), "WebAssembly crate is missing from workspace");
 assert(webCargoText.includes('features = ["wasm_js"]'), "Browser CSPRNG backend is not enabled");
 assert(webCargoText.includes('keysmith-core = { path = "../keysmith-core" }'), "Web runtime must reuse keysmith-core");
-assert(webRuntimeText.includes('/wasm/keysmith_web.js'), "Browser WASM runtime loader is missing");
+assert(webRuntimeText.includes("import.meta.env.BASE_URL"), "Browser WASM runtime must honor the Vite base path");
+assert(webRuntimeText.includes("wasm/keysmith_web.js"), "Browser WASM runtime loader is missing");
 assert(apiText.includes("webRuntime.generatePassword"), "Browser password fallback is missing");
-assert(apiText.includes('navigator.serviceWorker.register("/sw.js")'), "PWA service-worker registration is missing");
-assert(apiText.includes('manifest.href = "/manifest.webmanifest"'), "PWA manifest registration is missing");
+assert(apiText.includes("navigator.serviceWorker.register(`${baseUrl}sw.js`)"), "Base-aware PWA service-worker registration is missing");
+assert(apiText.includes("manifest.href = `${baseUrl}manifest.webmanifest`"), "Base-aware PWA manifest registration is missing");
+assert(apiText.includes("Web/PWA · ChromeOS"), "Browser About platform extension is missing");
 assert(manifest.display === "standalone", "PWA manifest must remain installable as standalone");
+assert(manifest.start_url === "." && manifest.scope === ".", "PWA manifest must remain subpath-safe");
+assert(serviceWorkerText.includes("self.registration.scope"), "Service worker cache must be scope-relative");
 assert(serviceWorkerText.includes("keysmith_web_bg.wasm"), "Service worker must cache the WASM runtime");
 
 for (const dependency of [
