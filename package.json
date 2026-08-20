@@ -12,7 +12,18 @@
     "format:check": "node scripts/check-format.mjs",
     "version:check": "node scripts/check-version.mjs",
     "test": "vitest run",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "android:init": "tauri android init",
+    "android:dev": "tauri android dev",
+    "android:build:apk": "tauri android build --apk",
+    "android:build:aab": "tauri android build --aab",
+    "ios:init": "tauri ios init",
+    "ios:dev": "tauri ios dev",
+    "ios:build": "tauri ios build"
+  },
+  "dependencies": {
+    "@tauri-apps/plugin-dialog": "^2",
+    "@tauri-apps/plugin-fs": "^2"
   },
   "devDependencies": {
     "@eslint/js": "^9",
