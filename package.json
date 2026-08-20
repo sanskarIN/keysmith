@@ -11,6 +11,7 @@
     "format": "prettier --write .",
     "format:check": "node scripts/check-format.mjs",
     "version:check": "node scripts/check-version.mjs",
+    "platform:check": "node scripts/check-platforms.mjs",
     "test": "vitest run",
     "tauri": "tauri",
     "android:init": "tauri android init",
@@ -18,6 +19,7 @@
     "android:build:apk": "tauri android build --apk",
     "android:build:aab": "tauri android build --aab",
     "ios:init": "tauri ios init",
+    "ios:prepare": "node scripts/prepare-ios-privacy.mjs",
     "ios:dev": "tauri ios dev",
     "ios:build": "tauri ios build"
   },
