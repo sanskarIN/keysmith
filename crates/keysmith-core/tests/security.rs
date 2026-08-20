@@ -22,6 +22,52 @@ fn ambiguity_exclusion_removes_known_ambiguous_characters() {
 }
 
 #[test]
+fn custom_symbol_policy_rejects_alphanumeric_characters() {
+    let mut options = PasswordOptions::default();
+    options.custom_symbols = Some("!a".to_owned());
+    assert!(generate_password(&options).is_err());
+}
+
+#[test]
+fn custom_symbol_policy_rejects_more_than_forty_characters() {
+    let mut options = PasswordOptions::default();
+    options.custom_symbols = Some("!".repeat(41));
+    assert!(generate_password(&options).is_err());
+}
+
+#[test]
+fn custom_symbols_are_deduplicated_and_respect_ambiguity_exclusion() {
+    let options = PasswordOptions {
+        length: 32,
+        lowercase: false,
+        uppercase: false,
+        digits: false,
+        symbols: true,
+        exclude_ambiguous: true,
+        custom_symbols: Some("!!|".to_owned()),
+    };
+    let password = generate_password(&options)
+        .unwrap_or_else(|error| panic!("generation failed: {error}"));
+    assert!(password.chars().all(|character| character == '!'));
+}
+
+#[test]
+fn disabled_symbol_class_ignores_stale_custom_symbol_input() {
+    let options = PasswordOptions {
+        length: 16,
+        lowercase: true,
+        uppercase: false,
+        digits: false,
+        symbols: false,
+        exclude_ambiguous: true,
+        custom_symbols: Some("not-symbols".to_owned()),
+    };
+    let password = generate_password(&options)
+        .unwrap_or_else(|error| panic!("generation failed: {error}"));
+    assert!(password.chars().all(|character| character.is_ascii_lowercase()));
+}
+
+#[test]
 fn batch_generation_enforces_limit() {
     assert!(generate_batch(&PasswordOptions::default(), 0).is_err());
     assert!(generate_batch(&PasswordOptions::default(), 501).is_err());
