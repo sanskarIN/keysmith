@@ -2,6 +2,7 @@ use keysmith_core::{
     PassphraseOptions, PasswordOptions, estimated_passphrase_entropy_bits, generate_batch,
     generate_passphrase, generate_password, presets,
 };
+use std::collections::HashSet;
 
 #[test]
 fn generated_password_contains_each_enabled_class() {
@@ -104,4 +105,11 @@ fn passphrase_entropy_tracks_the_8192_entry_selection_space() {
         include_number: false,
     };
     assert_eq!(estimated_passphrase_entropy_bits(&options), 39.0);
+}
+
+#[test]
+fn passphrase_word_table_has_8192_unique_entries() {
+    let unique_words: HashSet<_> = englishid::WORD_LIST.iter().copied().collect();
+    assert_eq!(englishid::WORD_LIST.len(), 8192);
+    assert_eq!(unique_words.len(), englishid::WORD_LIST.len());
 }
