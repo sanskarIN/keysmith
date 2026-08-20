@@ -1,0 +1,18 @@
+{
+  "name": "KeySmith",
+  "short_name": "KeySmith",
+  "description": "Private, offline password and passphrase generation powered by the shared KeySmith Rust security core.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#151A24",
+  "theme_color": "#151A24",
+  "icons": [
+    {
+      "src": "/keysmith.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
