@@ -4,7 +4,9 @@ use keysmith_core::{
 };
 use serde::Serialize;
 use std::{thread, time::Duration};
-use zeroize::Zeroize;
+use zeroize::Zeroizing;
+
+const SUPPORTED_CLIPBOARD_CLEAR_SECONDS: [u64; 5] = [0, 15, 30, 60, 120];
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -61,33 +63,40 @@ pub fn get_presets_command() -> Vec<keysmith_core::PasswordPreset> {
     presets()
 }
 
+fn validate_clipboard_clear_seconds(clear_after_seconds: u64) -> Result<(), String> {
+    if SUPPORTED_CLIPBOARD_CLEAR_SECONDS.contains(&clear_after_seconds) {
+        Ok(())
+    } else {
+        Err("unsupported clipboard clear duration".to_owned())
+    }
+}
+
 #[tauri::command]
-pub fn copy_secret_command(mut secret: String, clear_after_seconds: u64) -> Result<(), String> {
+pub fn copy_secret_command(secret: String, clear_after_seconds: u64) -> Result<(), String> {
+    let secret = Zeroizing::new(secret);
     if secret.chars().count() > 4096 {
-        secret.zeroize();
         return Err("clipboard value is too large".to_owned());
     }
+    validate_clipboard_clear_seconds(clear_after_seconds)?;
 
     let mut clipboard =
         arboard::Clipboard::new().map_err(|_| "clipboard is unavailable".to_owned())?;
     clipboard
-        .set_text(secret.clone())
+        .set_text(secret.to_string())
         .map_err(|_| "failed to write to clipboard".to_owned())?;
 
     if clear_after_seconds > 0 {
-        let mut expected = secret.clone();
+        let expected = Zeroizing::new(secret.to_string());
         thread::spawn(move || {
-            thread::sleep(Duration::from_secs(clear_after_seconds.min(300)));
+            thread::sleep(Duration::from_secs(clear_after_seconds));
             if let Ok(mut clipboard) = arboard::Clipboard::new() {
                 if clipboard.get_text().ok().as_deref() == Some(expected.as_str()) {
                     let _ = clipboard.set_text(String::new());
                 }
             }
-            expected.zeroize();
         });
     }
 
-    secret.zeroize();
     Ok(())
 }
 
@@ -98,4 +107,23 @@ pub fn clear_clipboard_command() -> Result<(), String> {
     clipboard
         .set_text(String::new())
         .map_err(|_| "failed to clear clipboard".to_owned())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{validate_clipboard_clear_seconds, SUPPORTED_CLIPBOARD_CLEAR_SECONDS};
+
+    #[test]
+    fn documented_clipboard_durations_are_supported() {
+        for seconds in SUPPORTED_CLIPBOARD_CLEAR_SECONDS {
+            assert!(validate_clipboard_clear_seconds(seconds).is_ok());
+        }
+    }
+
+    #[test]
+    fn undocumented_clipboard_durations_are_rejected() {
+        for seconds in [1, 14, 16, 300, u64::MAX] {
+            assert!(validate_clipboard_clear_seconds(seconds).is_err());
+        }
+    }
 }

@@ -1,7 +1,7 @@
 {
   "name": "keysmith",
   "private": true,
-  "version": "0.1.0",
+  "version": "2.7.4",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,6 +10,7 @@
     "lint": "eslint src vite.config.ts",
     "format": "prettier --write .",
     "format:check": "node scripts/check-format.mjs",
+    "version:check": "node scripts/check-version.mjs",
     "test": "vitest run",
     "tauri": "tauri"
   },

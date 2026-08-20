@@ -21,6 +21,7 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm run format:check
+      - run: npm run version:check
       - run: npm test
       - run: npm run build
 
@@ -50,6 +51,8 @@ jobs:
         with:
           node-version: 22
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
       - uses: Swatinem/rust-cache@v2
       - name: Install Linux dependencies
         if: matrix.os == 'ubuntu-22.04'
@@ -58,6 +61,8 @@ jobs:
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
       - run: npm install
       - run: cargo check -p keysmith --all-targets
+      - run: cargo clippy -p keysmith --all-targets -- -D warnings
+      - run: cargo test -p keysmith --lib
 
   dependency-policy:
     name: Rust dependency policy
