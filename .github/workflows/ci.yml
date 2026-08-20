@@ -30,6 +30,30 @@ jobs:
       - run: npm test
       - run: npm run build
 
+  web-check:
+    name: Web/PWA (WASM)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - run: npm install
+      - run: cargo test -p keysmith-web
+      - run: npm run web:build
+      - name: Verify PWA artifacts
+        shell: bash
+        run: |
+          test -s dist/wasm/keysmith_web.js
+          test -s dist/wasm/keysmith_web_bg.wasm
+          test -s dist/manifest.webmanifest
+          test -s dist/sw.js
+          test -s dist/keysmith.svg
+
   rust-core:
     name: Rust core quality
     runs-on: ubuntu-latest
