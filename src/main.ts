@@ -198,8 +198,14 @@ async function exportBatch(): Promise<void> {
   const filename = `keysmith-batch-${new Date().toISOString().slice(0, 10)}.txt`;
 
   try {
-    const saved = await api.exportTextFile(filename, content);
-    setStatus(saved ? `${en.batchExportWarning} Saved to the selected location.` : "Export cancelled.");
+    const result = await api.exportTextFile(filename, content);
+    if (result === "saved") {
+      setStatus(`${en.batchExportWarning} Saved and verified at the selected location.`);
+    } else if (result === "download-started") {
+      setStatus(`${en.batchExportWarning} Browser download started; verify the downloaded file.`);
+    } else {
+      setStatus("Export cancelled.");
+    }
   } catch (error) {
     setStatus(`Batch export failed: ${String(error)}`, true);
   }
