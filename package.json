@@ -4,10 +4,22 @@
   "version": "2.7.4",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "dev": "npm run dev:web",
+    "dev:web": "vite --config vite.web.config.ts --mode web",
+    "dev:tauri": "vite --mode tauri",
+    "build": "npm run build:tauri",
+    "build:tauri": "tsc --noEmit && vite build --mode tauri",
+    "wasm:build": "wasm-pack build crates/keysmith-wasm --target web --release --out-dir ../../public/wasm --out-name keysmith_wasm",
+    "build:web": "npm run wasm:build && tsc --noEmit && vite build --config vite.web.config.ts --mode web",
+    "preview:web": "vite preview --config vite.web.config.ts --mode web",
+    "mobile:android:init": "tauri android init",
+    "mobile:android:dev": "tauri android dev",
+    "mobile:android:build": "tauri android build",
+    "mobile:ios:init": "tauri ios init",
+    "mobile:ios:dev": "tauri ios dev",
+    "mobile:ios:build": "tauri ios build",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint src vite.config.ts",
+    "lint": "eslint src vite.config.ts vite.web.config.ts",
     "format": "prettier --write .",
     "format:check": "node scripts/check-format.mjs",
     "version:check": "node scripts/check-version.mjs",
@@ -23,7 +35,8 @@
     "prettier": "^3",
     "typescript": "^5.9",
     "typescript-eslint": "^8",
-    "vitest": "^3",
-    "vite": "^7"
+    "vite": "^7",
+    "vite-plugin-pwa": "^1",
+    "vitest": "^3"
   }
 }
