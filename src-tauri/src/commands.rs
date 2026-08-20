@@ -108,3 +108,22 @@ pub fn clear_clipboard_command() -> Result<(), String> {
         .set_text(String::new())
         .map_err(|_| "failed to clear clipboard".to_owned())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{validate_clipboard_clear_seconds, SUPPORTED_CLIPBOARD_CLEAR_SECONDS};
+
+    #[test]
+    fn documented_clipboard_durations_are_supported() {
+        for seconds in SUPPORTED_CLIPBOARD_CLEAR_SECONDS {
+            assert!(validate_clipboard_clear_seconds(seconds).is_ok());
+        }
+    }
+
+    #[test]
+    fn undocumented_clipboard_durations_are_rejected() {
+        for seconds in [1, 14, 16, 300, u64::MAX] {
+            assert!(validate_clipboard_clear_seconds(seconds).is_err());
+        }
+    }
+}
