@@ -10,17 +10,27 @@ function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
-const [packageText, cargoText, libText, capabilityText, androidText, iosText, htmlText, mobileCss] =
-  await Promise.all([
-    read("package.json"),
-    read("src-tauri/Cargo.toml"),
-    read("src-tauri/src/lib.rs"),
-    read("src-tauri/capabilities/default.json"),
-    read("src-tauri/tauri.android.conf.json"),
-    read("src-tauri/tauri.ios.conf.json"),
-    read("index.html"),
-    read("src/mobile.css"),
-  ]);
+const [
+  packageText,
+  cargoText,
+  libText,
+  capabilityText,
+  androidText,
+  iosText,
+  htmlText,
+  mainText,
+  mobileCss,
+] = await Promise.all([
+  read("package.json"),
+  read("src-tauri/Cargo.toml"),
+  read("src-tauri/src/lib.rs"),
+  read("src-tauri/capabilities/default.json"),
+  read("src-tauri/tauri.android.conf.json"),
+  read("src-tauri/tauri.ios.conf.json"),
+  read("index.html"),
+  read("src/main.ts"),
+  read("src/mobile.css"),
+]);
 
 const packageJson = JSON.parse(packageText);
 const capability = JSON.parse(capabilityText);
@@ -65,6 +75,18 @@ assert(permissions.has("fs:allow-read-text-file"), "Export verification read per
 assert(htmlText.includes("viewport-fit=cover"), "Mobile viewport safe-area support is missing");
 assert(htmlText.includes("/src/mobile.css"), "Mobile stylesheet is not loaded");
 assert(htmlText.includes("Windows · macOS · Linux · Android · iOS"), "About platform list is incomplete");
+
+const sharedCssImport = 'import "./styles.css";';
+const mobileCssImport = 'import "./mobile.css";';
+const sharedCssIndex = mainText.indexOf(sharedCssImport);
+const mobileCssIndex = mainText.indexOf(mobileCssImport);
+assert(sharedCssIndex >= 0, "Shared stylesheet import is missing from src/main.ts");
+assert(mobileCssIndex >= 0, "Mobile stylesheet import is missing from src/main.ts");
+assert(
+  mobileCssIndex > sharedCssIndex,
+  "Mobile stylesheet must be imported after shared styles so mobile overrides win the cascade",
+);
+
 assert(mobileCss.includes("env(safe-area-inset-top)"), "Mobile safe-area CSS is missing");
 assert(mobileCss.includes("@media (pointer: coarse)"), "Touch-target CSS is missing");
 
