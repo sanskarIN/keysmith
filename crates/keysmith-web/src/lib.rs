@@ -91,7 +91,8 @@ mod tests {
 
     #[test]
     fn presets_binding_returns_json() {
-        let result = presets_json().unwrap_or_else(|error| panic!("web presets binding failed: {error:?}"));
+        let result = presets_json()
+            .unwrap_or_else(|error| panic!("web presets binding failed: {error:?}"));
         assert!(result.contains("balanced"));
         assert!(result.contains("maximum"));
     }
