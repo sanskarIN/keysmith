@@ -27,10 +27,13 @@ Clipboard integration itself still requires manual platform smoke testing becaus
 - `cargo fmt --all -- --check`
 - `cargo clippy -p keysmith-core --all-targets --all-features -- -D warnings`
 - `cargo check -p keysmith --all-targets`
+- `cargo clippy -p keysmith --all-targets -- -D warnings`
+- `cargo test -p keysmith --lib`
 - `npm run typecheck`
 - `npm run lint`
 - `npm run format:check`
 - `npm run version:check`
+- `npm test`
 - `npm run build`
 
 `npm run version:check` verifies that `package.json`, the Rust workspace version in `Cargo.toml`, `src-tauri/tauri.conf.json`, and every semantic version displayed in `index.html` agree. The release workflow additionally supplies the Git tag through `KEYSMITH_EXPECTED_VERSION`, preventing a `vX.Y.Z` tag from publishing artifacts for a different manifest version.
