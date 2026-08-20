@@ -1,12 +1,14 @@
 const CACHE_NAME = "keysmith-v2.7.4";
+const scopedUrl = (path) => new URL(path, self.registration.scope).toString();
 const CORE_ASSETS = [
-  "/",
-  "/index.html",
-  "/manifest.webmanifest",
-  "/keysmith.svg",
-  "/wasm/keysmith_web.js",
-  "/wasm/keysmith_web_bg.wasm",
+  scopedUrl("./"),
+  scopedUrl("index.html"),
+  scopedUrl("manifest.webmanifest"),
+  scopedUrl("keysmith.svg"),
+  scopedUrl("wasm/keysmith_web.js"),
+  scopedUrl("wasm/keysmith_web_bg.wasm"),
 ];
+const NAVIGATION_FALLBACK = scopedUrl("index.html");
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(CORE_ASSETS)));
@@ -40,7 +42,7 @@ self.addEventListener("fetch", (event) => {
         const cached = await caches.match(event.request);
         if (cached) return cached;
         if (event.request.mode === "navigate") {
-          const shell = await caches.match("/index.html");
+          const shell = await caches.match(NAVIGATION_FALLBACK);
           if (shell) return shell;
         }
         throw new Error("Offline resource is not cached");
