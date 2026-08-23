@@ -8,7 +8,7 @@ repository.workspace = true
 description = "Security-focused offline password and passphrase generation core for KeySmith"
 
 [dependencies]
-eff_wordlist = "1.0.3"
+eff_wordlist = { package = "eff-wordlist", version = "1.0.3" }
 getrandom = "0.4"
 serde = { version = "1", features = ["derive"] }
 thiserror = "2"
