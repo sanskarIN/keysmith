@@ -13,8 +13,8 @@ repository = "https://github.com/sanskarIN/keysmith"
 unsafe_code = "forbid"
 
 [workspace.lints.clippy]
-all = "warn"
-pedantic = "allow"
-nursery = "allow"
+all = { level = "warn", priority = -1 }
+pedantic = { level = "allow", priority = -1 }
+nursery = { level = "allow", priority = -1 }
 unwrap_used = "deny"
 expect_used = "deny"

@@ -1,6 +1,6 @@
 use keysmith_core::{
-    estimate_strength, generate_batch, generate_passphrase, generate_password, presets,
-    PassphraseOptions, PasswordOptions, StrengthEstimate,
+    PassphraseOptions, PasswordOptions, StrengthEstimate, estimate_strength, generate_batch,
+    generate_passphrase, generate_password, presets,
 };
 use serde::Serialize;
 use std::{thread, time::Duration};
@@ -111,7 +111,7 @@ pub fn clear_clipboard_command() -> Result<(), String> {
 
 #[cfg(test)]
 mod tests {
-    use super::{validate_clipboard_clear_seconds, SUPPORTED_CLIPBOARD_CLEAR_SECONDS};
+    use super::{SUPPORTED_CLIPBOARD_CLEAR_SECONDS, validate_clipboard_clear_seconds};
 
     #[test]
     fn documented_clipboard_durations_are_supported() {

@@ -1,6 +1,6 @@
 use keysmith_core::{
-    generate_batch, generate_passphrase, generate_password, presets, PassphraseOptions,
-    PasswordOptions,
+    PassphraseOptions, PasswordOptions, generate_batch, generate_passphrase, generate_password,
+    presets,
 };
 
 #[test]
@@ -47,8 +47,8 @@ fn custom_symbols_are_deduplicated_and_respect_ambiguity_exclusion() {
         exclude_ambiguous: true,
         custom_symbols: Some("!!|".to_owned()),
     };
-    let password = generate_password(&options)
-        .unwrap_or_else(|error| panic!("generation failed: {error}"));
+    let password =
+        generate_password(&options).unwrap_or_else(|error| panic!("generation failed: {error}"));
     assert!(password.chars().all(|character| character == '!'));
 }
 
@@ -63,9 +63,13 @@ fn disabled_symbol_class_ignores_stale_custom_symbol_input() {
         exclude_ambiguous: true,
         custom_symbols: Some("not-symbols".to_owned()),
     };
-    let password = generate_password(&options)
-        .unwrap_or_else(|error| panic!("generation failed: {error}"));
-    assert!(password.chars().all(|character| character.is_ascii_lowercase()));
+    let password =
+        generate_password(&options).unwrap_or_else(|error| panic!("generation failed: {error}"));
+    assert!(
+        password
+            .chars()
+            .all(|character| character.is_ascii_lowercase())
+    );
 }
 
 #[test]
@@ -86,7 +90,7 @@ fn batch_generation_enforces_limit() {
 #[test]
 fn passphrase_uses_requested_word_count() {
     let options = PassphraseOptions::default();
-    let phrase = generate_passphrase(&options)
-        .unwrap_or_else(|error| panic!("passphrase failed: {error}"));
+    let phrase =
+        generate_passphrase(&options).unwrap_or_else(|error| panic!("passphrase failed: {error}"));
     assert_eq!(phrase.split('-').count(), options.words);
 }
